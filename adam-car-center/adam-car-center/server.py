@@ -31,7 +31,7 @@ def get_db():
     return conn
 
 def check_admin(req):
-    return req.headers.get('x-admin-key') == ADMIN_KEY
+    return session.get('admin')
 
 # ─── API: حجز جديد ───
 @app.route('/login', methods=['GET', 'POST'])
