@@ -1,7 +1,8 @@
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify, send_from_directory, session, redirect, url_for
 import sqlite3, os, datetime
 
 app = Flask(__name__, static_folder='public', static_url_path='')
+app.secret_key = 'miar_secure_key_2026'
 
 DB = 'bookings.db'
 ADMIN_KEY = os.environ.get('ADMIN_KEY', 'adam2025admin')  # غيّر كلمة المرور هنا
