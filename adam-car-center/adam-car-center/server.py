@@ -48,7 +48,7 @@ def login():
     return send_from_directory('public', 'login.html')
 @app.route('/api/booking', methods=['POST'])
 def add_booking():
-    data = request.get_json()
+    data = request.form
     name    = (data.get('name') or '').strip()
     phone   = (data.get('phone') or '').strip()
     car     = (data.get('car') or '').strip()
@@ -88,7 +88,7 @@ def get_bookings():
 def update_booking(bid):
     if not check_admin(request):
         return jsonify({'success': False, 'message': 'غير مصرح'}), 401
-    data = request.get_json()
+   data = request.form
     status = data.get('status', '')
     allowed = ['جديد', 'تم التواصل', 'مكتمل', 'ملغي']
     if status not in allowed:
