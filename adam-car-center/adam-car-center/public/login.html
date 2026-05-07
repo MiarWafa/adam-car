@@ -1,15 +1,146 @@
 <!DOCTYPE html>
-<html>
+<html lang="ar" dir="rtl">
 <head>
-    <title>Admin Login</title>
-</head>
-<body>
-    <h2>Admin Login</h2>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>تسجيل دخول الأدمن | مركز آدم</title>
 
-    <form method="POST">
-        <input type="password" name="password" placeholder="Enter password" required>
-        <button type="submit">Login</button>
-    </form>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+
+<style>
+:root {
+  --gold:#f5a623;
+  --orange:#ff6b00;
+  --dark:#080810;
+  --dark2:#0f0f1a;
+  --dark3:#161628;
+  --border:rgba(245,166,35,0.25);
+  --text:#fff;
+  --muted:rgba(255,255,255,0.6);
+}
+
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+}
+
+body{
+  font-family:'Cairo',sans-serif;
+  background: radial-gradient(circle at 50% 30%, rgba(245,166,35,0.08), transparent 60%), var(--dark);
+  height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color:var(--text);
+}
+
+/* Box */
+.login-box{
+  width:100%;
+  max-width:420px;
+  background:var(--dark3);
+  border:1px solid var(--border);
+  border-radius:18px;
+  padding:40px 30px;
+  text-align:center;
+  box-shadow:0 0 25px rgba(0,0,0,0.5);
+}
+
+/* Title */
+.logo{
+  font-size:30px;
+  font-weight:900;
+  color:var(--gold);
+  margin-bottom:6px;
+}
+
+.sub{
+  font-size:13px;
+  color:var(--muted);
+  margin-bottom:25px;
+}
+
+/* Input */
+input{
+  width:100%;
+  padding:12px 14px;
+  margin-bottom:14px;
+  border-radius:10px;
+  border:1px solid var(--border);
+  background:rgba(255,255,255,0.05);
+  color:#fff;
+  font-family:'Cairo';
+  outline:none;
+  transition:0.2s;
+}
+
+input:focus{
+  border-color:var(--gold);
+  box-shadow:0 0 10px rgba(245,166,35,0.2);
+}
+
+/* Button */
+button{
+  width:100%;
+  padding:12px;
+  border:none;
+  border-radius:10px;
+  font-weight:900;
+  font-size:15px;
+  cursor:pointer;
+  font-family:'Cairo';
+  background:linear-gradient(135deg,var(--gold),var(--orange));
+  color:#000;
+  transition:0.2s;
+}
+
+button:hover{
+  opacity:0.9;
+  transform:translateY(-1px);
+}
+
+/* Error */
+.error{
+  margin-top:12px;
+  font-size:13px;
+  color:#ff6b6b;
+  display:none;
+}
+</style>
+</head>
+
+<body>
+
+<div class="login-box">
+  <div class="logo">🚗 مركز آدم</div>
+  <div class="sub">تسجيل دخول لوحة التحكم</div>
+
+  <input type="password" id="pass" placeholder="ادخل كلمة المرور" onkeydown="if(event.key==='Enter') login()">
+  <button onclick="login()">دخول</button>
+
+  <div class="error" id="err">❌ كلمة المرور غير صحيحة</div>
+</div>
+
+<script>
+function login(){
+  const pass = document.getElementById('pass').value;
+
+  fetch('/login', {
+    method:'POST',
+    headers:{'Content-Type':'application/x-www-form-urlencoded'},
+    body:'password=' + encodeURIComponent(pass)
+  })
+  .then(res=>{
+    if(res.redirected){
+      window.location.href = res.url;
+    } else {
+      document.getElementById('err').style.display='block';
+      setTimeout(()=>document.getElementById('err').style.display='none',3000);
+    }
+  });
+}
+</script>
 
 </body>
 </html>
