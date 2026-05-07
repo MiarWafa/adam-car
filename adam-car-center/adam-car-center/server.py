@@ -34,6 +34,18 @@ def check_admin(req):
     return req.headers.get('x-admin-key') == ADMIN_KEY
 
 # ─── API: حجز جديد ───
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        password = request.form.get('password')
+
+        if password == ADMIN_KEY:
+            session['admin'] = True
+            return redirect('/admin')
+
+        return "❌ كلمة المرور غلط", 401
+
+    return send_from_directory('public', 'login.html')
 @app.route('/api/booking', methods=['POST'])
 def add_booking():
     data = request.get_json()
@@ -105,7 +117,14 @@ def index():
 
 @app.route('/admin')
 def admin():
+    if not session.get('admin'):
+        return redirect('/login')
+
     return send_from_directory('public', 'admin.html')
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect('/login')
 
 if __name__ == '__main__':
     init_db()
