@@ -115,45 +115,27 @@ def available_times():
     if not date:
         return jsonify({
             'success': False,
-            'message': 'date required'
+            'times': []
         })
 
-    # كل المواعيد الثابتة
     all_times = [
-        "09:00",
-        "10:00",
-        "11:00",
-        "12:00",
-        "13:00",
-        "14:00",
-        "15:00",
-        "16:00",
-        "17:00",
-        "18:00",
-        "19:00",
-        "20:00",
-        "21:00"
+        "09:00","10:00","11:00","12:00",
+        "13:00","14:00","15:00","16:00",
+        "17:00","18:00","19:00","20:00","21:00"
     ]
 
     conn = get_db()
 
     booked = conn.execute(
-        '''
-        SELECT booking_time
-        FROM bookings
-        WHERE booking_date=?
-        ''',
+        'SELECT booking_time FROM bookings WHERE booking_date=?',
         (date,)
     ).fetchall()
 
     conn.close()
 
-    booked_times = [b['booking_time'] for b in booked]
+    booked_times = set([b['booking_time'] for b in booked])
 
-    available = [
-        t for t in all_times
-        if t not in booked_times
-    ]
+    available = [t for t in all_times if t not in booked_times]
 
     return jsonify({
         'success': True,
