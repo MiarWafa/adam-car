@@ -1,9 +1,9 @@
 from flask import Flask, request, jsonify, send_from_directory, session, redirect
 import sqlite3, os
-from datetime import datetime
 
 app = Flask(__name__, static_folder='public', static_url_path='')
 
+# مهم جدًا للجلسات
 app.secret_key = os.environ.get('SECRET_KEY', 'miar_secure_key_2026')
 
 DB = 'bookings.db'
@@ -13,8 +13,8 @@ ADMIN_KEY = os.environ.get('ADMIN_KEY', 'adam2025admin')
 # ───────── DB INIT ─────────
 def init_db():
     conn = sqlite3.connect(DB)
-
-    # bookings
+    
+    # تحديث جدول الحجوزات ليشمل المواعيد (التاريخ والوقت)
     conn.execute('''
         CREATE TABLE IF NOT EXISTS bookings (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -22,34 +22,26 @@ def init_db():
             phone TEXT NOT NULL,
             car TEXT NOT NULL,
             service TEXT NOT NULL,
+            appointment_date TEXT NOT NULL, 
+            appointment_time TEXT NOT NULL,
             notes TEXT DEFAULT '',
             status TEXT DEFAULT 'جديد',
-            appointment_id INTEGER,
             created_at TEXT DEFAULT (datetime('now','localtime'))
         )
     ''')
 
-    # appointments (المواعيد)
-    conn.execute('''
-        CREATE TABLE IF NOT EXISTS appointments (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            date TEXT,
-            time TEXT,
-            is_booked INTEGER DEFAULT 0
-        )
-    ''')
-
-    # expenses (مصروفات السيارة)
+    # إضافة جدول جديد للمصروفات وقطع الغيار
     conn.execute('''
         CREATE TABLE IF NOT EXISTS expenses (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            booking_id INTEGER,
-            item TEXT,
-            cost REAL,
-            notes TEXT
+            booking_id INTEGER NOT NULL,
+            description TEXT NOT NULL,
+            cost REAL NOT NULL,
+            created_at TEXT DEFAULT (datetime('now','localtime')),
+            FOREIGN KEY (booking_id) REFERENCES bookings (id) ON DELETE CASCADE
         )
     ''')
-
+    
     conn.commit()
     conn.close()
 
@@ -57,6 +49,8 @@ def init_db():
 def get_db():
     conn = sqlite3.connect(DB)
     conn.row_factory = sqlite3.Row
+    # تفعيل القيود الخاصة بالمفاتيح الأجنبية (Foreign keys)
+    conn.execute('PRAGMA foreign_keys = ON')
     return conn
 
 
@@ -79,7 +73,7 @@ def login():
     return send_from_directory('public', 'login.html')
 
 
-# ───────── BOOKING ─────────
+# ───────── ADD BOOKING ─────────
 @app.route('/api/booking', methods=['POST'])
 def add_booking():
     data = request.get_json()
@@ -88,43 +82,26 @@ def add_booking():
     phone = (data.get('phone') or '').strip()
     car = (data.get('car') or '').strip()
     service = (data.get('service') or '').strip()
+    appointment_date = (data.get('appointment_date') or '').strip()
+    appointment_time = (data.get('appointment_time') or '').strip()
     notes = (data.get('notes') or '').strip()
-    appointment_id = data.get('appointment_id')
 
-    if not all([name, phone, car, service]):
-        return jsonify({'success': False, 'message': 'يرجى ملء جميع الحقول'}), 400
+    # التحقق من أن العميل اختار موعد
+    if not all([name, phone, car, service, appointment_date, appointment_time]):
+        return jsonify({'success': False, 'message': 'يرجى ملء جميع الحقول بما فيها تاريخ ووقت الحجز'}), 400
 
     conn = get_db()
-
-    # التأكد من الميعاد
-    if appointment_id:
-        slot = conn.execute(
-            'SELECT * FROM appointments WHERE id=? AND is_booked=0',
-            (appointment_id,)
-        ).fetchone()
-
-        if not slot:
-            return jsonify({'success': False, 'message': 'الموعد غير متاح'}), 400
-
-        conn.execute(
-            'UPDATE appointments SET is_booked=1 WHERE id=?',
-            (appointment_id,)
-        )
-
     cur = conn.execute(
-        '''INSERT INTO bookings 
-        (name, phone, car, service, notes, appointment_id) 
-        VALUES (?, ?, ?, ?, ?, ?)''',
-        (name, phone, car, service, notes, appointment_id)
+        'INSERT INTO bookings (name, phone, car, service, appointment_date, appointment_time, notes) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        (name, phone, car, service, appointment_date, appointment_time, notes)
     )
-
     conn.commit()
     conn.close()
 
     return jsonify({'success': True, 'id': cur.lastrowid})
 
 
-# ───────── BOOKINGS ─────────
+# ───────── GET BOOKINGS ─────────
 @app.route('/api/bookings', methods=['GET'])
 def get_bookings():
     if not is_admin():
@@ -141,7 +118,7 @@ def get_bookings():
 @app.route('/api/bookings/<int:bid>', methods=['PATCH'])
 def update_booking(bid):
     if not is_admin():
-        return jsonify({'success': False}), 401
+        return jsonify({'success': False, 'message': 'غير مصرح'}), 401
 
     data = request.get_json()
     status = data.get('status')
@@ -158,59 +135,64 @@ def update_booking(bid):
     return jsonify({'success': True})
 
 
-# ───────── DELETE BOOKING ─────────
+# ───────── EXPENSES (المصروفات) ─────────
+@app.route('/api/bookings/<int:bid>/expenses', methods=['GET', 'POST'])
+def manage_expenses(bid):
+    if not is_admin():
+        return jsonify({'success': False, 'message': 'غير مصرح'}), 401
+
+    conn = get_db()
+
+    if request.method == 'POST':
+        # التأكد أن حالة الحجز "تم التواصل" قبل السماح بإضافة مصروفات
+        booking = conn.execute('SELECT status FROM bookings WHERE id=?', (bid,)).fetchone()
+        
+        if not booking:
+            conn.close()
+            return jsonify({'success': False, 'message': 'الحجز غير موجود'}), 404
+            
+        if booking['status'] != 'تم التواصل':
+            conn.close()
+            return jsonify({'success': False, 'message': 'لا يمكن إضافة مصروفات إلا للسيارات التي حالتها "تم التواصل"'}), 400
+
+        data = request.get_json()
+        description = data.get('description', '').strip()
+        cost = data.get('cost')
+
+        if not description or cost is None:
+            conn.close()
+            return jsonify({'success': False, 'message': 'يرجى إدخال وصف وقيمة المصروف'}), 400
+
+        conn.execute('INSERT INTO expenses (booking_id, description, cost) VALUES (?, ?, ?)', 
+                     (bid, description, float(cost)))
+        conn.commit()
+        conn.close()
+        
+        return jsonify({'success': True, 'message': 'تم إضافة المصروفات بنجاح'})
+
+    # في حالة الـ GET، استرجاع كل المصروفات الخاصة بهذه السيارة
+    rows = conn.execute('SELECT * FROM expenses WHERE booking_id=? ORDER BY id DESC', (bid,)).fetchall()
+    conn.close()
+
+    return jsonify({'success': True, 'expenses': [dict(r) for r in rows]})
+
+
+# ───────── DELETE ─────────
 @app.route('/api/bookings/<int:bid>', methods=['DELETE'])
 def delete_booking(bid):
     if not is_admin():
-        return jsonify({'success': False}), 401
+        return jsonify({'success': False, 'message': 'غير مصرح'}), 401
 
     conn = get_db()
     conn.execute('DELETE FROM bookings WHERE id=?', (bid,))
+    # بفضل الـ CASCADE في الداتابيز، سيتم مسح مصروفات هذه السيارة تلقائياً
     conn.commit()
     conn.close()
 
     return jsonify({'success': True})
 
 
-# ───────── EXPENSES ─────────
-@app.route('/api/expenses/<int:bid>', methods=['POST'])
-def add_expense(bid):
-    if not is_admin():
-        return jsonify({'success': False}), 401
-
-    data = request.get_json()
-
-    item = data.get('item')
-    cost = data.get('cost')
-    notes = data.get('notes', '')
-
-    conn = get_db()
-    conn.execute(
-        'INSERT INTO expenses (booking_id, item, cost, notes) VALUES (?,?,?,?)',
-        (bid, item, cost, notes)
-    )
-    conn.commit()
-    conn.close()
-
-    return jsonify({'success': True})
-
-
-@app.route('/api/expenses/<int:bid>')
-def get_expenses(bid):
-    if not is_admin():
-        return jsonify({'success': False}), 401
-
-    conn = get_db()
-    rows = conn.execute(
-        'SELECT * FROM expenses WHERE booking_id=?',
-        (bid,)
-    ).fetchall()
-    conn.close()
-
-    return jsonify([dict(r) for r in rows])
-
-
-# ───────── PAGES ─────────
+# ───────── FRONTEND ─────────
 @app.route('/')
 def index():
     return send_from_directory('public', 'index.html')
@@ -218,6 +200,7 @@ def index():
 
 @app.route('/admin')
 def admin():
+    # هذا الكود هو الذي يحمي صفحة الأدمن. لا تضع أي فورم تسجيل دخول في الـ HTML الخاص بالأدمن
     if not is_admin():
         return redirect('/login')
 
