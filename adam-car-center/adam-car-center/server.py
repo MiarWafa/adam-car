@@ -105,11 +105,65 @@ def is_admin():
 
 
 # ================= BOOKING =================
+# ================= AVAILABLE TIMES =================
+
+@app.route('/api/available-times')
+def available_times():
+
+    date = request.args.get('date')
+
+    if not date:
+        return jsonify({
+            'success': False,
+            'message': 'date required'
+        })
+
+    # كل المواعيد الثابتة
+    all_times = [
+        "09:00",
+        "10:00",
+        "11:00",
+        "12:00",
+        "13:00",
+        "14:00",
+        "15:00",
+        "16:00",
+        "17:00",
+        "18:00",
+        "19:00",
+        "20:00",
+        "21:00"
+    ]
+
+    conn = get_db()
+
+    booked = conn.execute(
+        '''
+        SELECT booking_time
+        FROM bookings
+        WHERE booking_date=?
+        ''',
+        (date,)
+    ).fetchall()
+
+    conn.close()
+
+    booked_times = [b['booking_time'] for b in booked]
+
+    available = [
+        t for t in all_times
+        if t not in booked_times
+    ]
+
+    return jsonify({
+        'success': True,
+        'times': available
+    })
 
 @app.route('/api/booking', methods=['POST'])
 def add_booking():
 
-    data = request.form
+    data = request.get_json()
 
     name = (data.get('name') or '').strip()
     phone = (data.get('phone') or '').strip()
