@@ -108,112 +108,337 @@
         </div>
     </div>
 
-    <script>
-        let allBookings = [];
-        let currentFilter = 'الكل';
+  <script>
+    let allBookings = [];
+    let currentFilter = 'الكل';
 
-        // تحميل البيانات عند فتح الصفحة
-        window.onload = loadBookings;
+    // تحميل البيانات عند فتح الصفحة
+    window.onload = loadBookings;
 
-        function loadBookings() {
-            fetch('/api/bookings')
-            .then(r => {
-                if(r.status === 401) window.location.href = '/login';
-                return r.json();
-            })
-            .then(data => {
-                if (data.success) {
-                    allBookings = data.bookings;
-                    renderAll();
-                }
-            }).catch(err => console.error("Error loading data:", err));
-        }
-
-        function setFilter(f, btn) {
-            currentFilter = f;
-            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            renderTable();
-        }
-
-        function renderAll() {
-            const total = allBookings.length;
-            const newB = allBookings.filter(b => b.status === 'جديد').length;
-            const done = allBookings.filter(b => b.status === 'مكتمل').length;
-            const contact = allBookings.filter(b => b.status === 'تم التواصل').length;
-
-            document.getElementById('sAll').textContent = total;
-            document.getElementById('sNew').textContent = newB;
-            document.getElementById('sDone').textContent = done;
-            document.getElementById('sContact').textContent = contact;
-            document.getElementById('totalBadge').textContent = total + ' حجز';
-            renderTable();
-        }
-
-        function renderTable() {
-            const filtered = currentFilter === 'الكل' ? allBookings : allBookings.filter(b => b.status === currentFilter);
-            const tbody = document.getElementById('tableBody');
-            
-            if (!filtered.length) {
-                tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding:40px;">📋 لا يوجد حجوزات حالياً</td></tr>`;
+    function loadBookings() {
+        fetch('/api/bookings')
+        .then(r => {
+            if(r.status === 401) {
+                window.location.href = '/login';
                 return;
             }
+            return r.json();
+        })
+        .then(data => {
+            if (data && data.success) {
+                allBookings = data.bookings;
 
-            tbody.innerHTML = filtered.map(b => {
-                const sc = b.status.replace(' ', '_');
-                const datePart = b.created_at ? b.created_at.split(' ')[0] : '—';
-                const timePart = b.created_at ? b.created_at.split(' ')[1]?.slice(0,5) : '';
+                // ترتيب الـ ID تلقائياً في العرض
+                allBookings = allBookings.map((b, index) => ({
+                    ...b,
+                    display_id: index + 1
+                }));
 
-                return `<tr>
-                    <td style="color:var(--gold);font-weight:700">#${b.id}</td>
-                    <td class="name">${esc(b.name)}</td>
-                    <td class="phone"><a href="tel:${esc(b.phone)}">${esc(b.phone)}</a></td>
-                    <td>${esc(b.car)}</td>
-                    <td>${esc(b.service)}</td>
-                    <td title="${esc(b.notes)}">${esc(b.notes || '—')}</td>
-                    <td><span class="status-badge s-${sc}">${esc(b.status)}</span></td>
-                    <td>${datePart}<br><small style="opacity:0.5">${timePart}</small></td>
-                    <td>
-                        <select class="action-select" onchange="changeStatus(${b.id}, this.value)">
-                            <option value="">تغيير الحالة...</option>
-                            <option value="جديد">جديد</option>
-                            <option value="تم التواصل">تم التواصل</option>
-                            <option value="مكتمل">مكتمل</option>
-                            <option value="ملغي">ملغي</option>
-                        </select>
-                        <button class="del-btn" onclick="deleteBooking(${b.id})">🗑</button>
+                renderAll();
+            }
+        }).catch(err => console.error("Error loading data:", err));
+    }
+
+    function setFilter(f, btn) {
+        currentFilter = f;
+
+        document.querySelectorAll('.filter-btn').forEach(b => {
+            b.classList.remove('active');
+        });
+
+        btn.classList.add('active');
+
+        renderTable();
+    }
+
+    function renderAll() {
+        const total = allBookings.length;
+        const newB = allBookings.filter(b => b.status === 'جديد').length;
+        const done = allBookings.filter(b => b.status === 'مكتمل').length;
+        const contact = allBookings.filter(b => b.status === 'تم التواصل').length;
+
+        // إجمالي المصروفات والأرباح
+        let totalExpenses = 0;
+        let totalProfit = 0;
+
+        allBookings.forEach(b => {
+            if (b.parts && Array.isArray(b.parts)) {
+                b.parts.forEach(p => {
+                    totalExpenses += Number(p.cost || 0);
+                    totalProfit += Number(p.profit || 0);
+                });
+            }
+        });
+
+        document.getElementById('sAll').textContent = total;
+        document.getElementById('sNew').textContent = newB;
+        document.getElementById('sDone').textContent = done;
+        document.getElementById('sContact').textContent = contact;
+        document.getElementById('totalBadge').textContent = total + ' حجز';
+
+        // لو موجودين في الـ dashboard
+        if(document.getElementById('sExpenses')) {
+            document.getElementById('sExpenses').textContent = totalExpenses + ' ج';
+        }
+
+        if(document.getElementById('sProfit')) {
+            document.getElementById('sProfit').textContent = totalProfit + ' ج';
+        }
+
+        renderTable();
+    }
+
+    function renderTable() {
+
+        const filtered = currentFilter === 'الكل'
+            ? allBookings
+            : allBookings.filter(b => b.status === currentFilter);
+
+        const tbody = document.getElementById('tableBody');
+
+        if (!filtered.length) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="11" style="text-align:center; padding:40px;">
+                        📋 لا يوجد حجوزات حالياً
                     </td>
-                </tr>`;
-            }).join('');
+                </tr>
+            `;
+            return;
         }
 
-        function changeStatus(id, status) {
-            if (!status) return;
-            fetch('/api/bookings/' + id, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ status })
-            }).then(r => r.json()).then(d => {
-                if (d.success) loadBookings();
-            });
+        tbody.innerHTML = filtered.map(b => {
+
+            const sc = (b.status || '').replace(' ', '_');
+
+            const datePart = b.created_at
+                ? b.created_at.split(' ')[0]
+                : '—';
+
+            const timePart = b.created_at
+                ? b.created_at.split(' ')[1]?.slice(0,5)
+                : '';
+
+            // حساب المصروفات والربح
+            let expenses = 0;
+            let profit = 0;
+
+            if (b.parts && Array.isArray(b.parts)) {
+                b.parts.forEach(p => {
+                    expenses += Number(p.cost || 0);
+                    profit += Number(p.profit || 0);
+                });
+            }
+
+            return `
+                <tr>
+
+                    <td style="color:var(--gold);font-weight:700">
+                        #${b.display_id}
+                    </td>
+
+                    <td class="name">
+                        ${esc(b.name)}
+                    </td>
+
+                    <td class="phone">
+                        <a href="tel:${esc(b.phone)}">
+                            ${esc(b.phone)}
+                        </a>
+                    </td>
+
+                    <td>${esc(b.car)}</td>
+
+                    <td>${esc(b.service)}</td>
+
+                    <td title="${esc(b.notes)}">
+                        ${esc(b.notes || '—')}
+                    </td>
+
+                    <td>
+                        <span class="status-badge s-${sc}">
+                            ${esc(b.status)}
+                        </span>
+                    </td>
+
+                    <td>
+                        <div style="font-size:13px;color:#f5a623">
+                            مصروفات: ${expenses} ج
+                        </div>
+
+                        <div style="font-size:13px;color:#2ecc71;margin-top:4px">
+                            ربح: ${profit} ج
+                        </div>
+
+                        <button 
+                            onclick="openPartsModal(${b.id})"
+                            style="
+                                margin-top:8px;
+                                background:rgba(245,166,35,0.12);
+                                border:1px solid rgba(245,166,35,0.3);
+                                color:#f5a623;
+                                padding:6px 10px;
+                                border-radius:8px;
+                                cursor:pointer;
+                                font-size:12px;
+                            "
+                        >
+                            + إضافة مصروف
+                        </button>
+                    </td>
+
+                    <td>
+                        ${datePart}
+                        <br>
+                        <small style="opacity:0.5">
+                            ${timePart}
+                        </small>
+                    </td>
+
+                    <td>
+
+                        <select 
+                            class="action-select"
+                            onchange="changeStatus(${b.id}, this.value)"
+                        >
+                            <option value="">
+                                تغيير الحالة...
+                            </option>
+
+                            <option value="جديد">
+                                جديد
+                            </option>
+
+                            <option value="تم التواصل">
+                                تم التواصل
+                            </option>
+
+                            <option value="مكتمل">
+                                مكتمل
+                            </option>
+
+                            <option value="ملغي">
+                                ملغي
+                            </option>
+
+                        </select>
+
+                        <button 
+                            class="del-btn"
+                            onclick="deleteBooking(${b.id})"
+                        >
+                            🗑
+                        </button>
+
+                    </td>
+
+                </tr>
+            `;
+        }).join('');
+    }
+
+    function changeStatus(id, status) {
+
+        if (!status) return;
+
+        fetch('/api/bookings/' + id, {
+
+            method: 'PATCH',
+
+            headers: {
+                'Content-Type': 'application/json'
+            },
+
+            body: JSON.stringify({ status })
+
+        })
+        .then(r => r.json())
+        .then(d => {
+
+            if (d.success) {
+                loadBookings();
+            }
+
+        });
+    }
+
+    function deleteBooking(id) {
+
+        if (!confirm('هل أنت متأكد من حذف هذا الحجز نهائياً؟')) {
+            return;
         }
 
-        function deleteBooking(id) {
-            if (!confirm('هل أنت متأكد من حذف هذا الحجز نهائياً؟')) return;
-            fetch('/api/bookings/' + id, { method: 'DELETE' })
-            .then(r => r.json())
-            .then(d => {
-                if (d.success) loadBookings();
-            });
-        }
+        fetch('/api/bookings/' + id, {
 
-        function esc(str) {
-            if (!str) return '';
-            return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-        }
+            method: 'DELETE'
 
-        // تحديث تلقائي كل دقيقة
-        setInterval(loadBookings, 60000);
-    </script>
+        })
+        .then(r => r.json())
+        .then(d => {
+
+            if (d.success) {
+                loadBookings();
+            }
+
+        });
+    }
+
+    // نافذة المصروفات
+    function openPartsModal(id) {
+
+        const partName = prompt('اسم قطعة الغيار أو المصروف');
+
+        if (!partName) return;
+
+        const cost = prompt('سعر الشراء');
+
+        if (!cost) return;
+
+        const sell = prompt('تم البيع بكام؟');
+
+        if (!sell) return;
+
+        fetch('/api/bookings/' + id + '/parts', {
+
+            method: 'POST',
+
+            headers: {
+                'Content-Type': 'application/json'
+            },
+
+            body: JSON.stringify({
+                name: partName,
+                cost: Number(cost),
+                sell: Number(sell)
+            })
+
+        })
+        .then(r => r.json())
+        .then(d => {
+
+            if (d.success) {
+                loadBookings();
+            } else {
+                alert(d.message || 'حدث خطأ');
+            }
+
+        });
+    }
+
+    function esc(str) {
+
+        if (!str) return '';
+
+        return String(str)
+            .replace(/&/g,'&amp;')
+            .replace(/</g,'&lt;')
+            .replace(/>/g,'&gt;')
+            .replace(/"/g,'&quot;');
+    }
+
+    // تحديث تلقائي كل دقيقة
+    setInterval(loadBookings, 60000);
+
+</script>
 </body>
 </html>
