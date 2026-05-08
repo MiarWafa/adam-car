@@ -1,3 +1,6 @@
+Admin · HTML
+Copy
+
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -7,182 +10,144 @@
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
 <style>
   :root {
-    --gold: #f5a623; --orange: #ff6b00;
-    --dark: #080810; --dark2: #0f0f1a; --dark3: #161628;
-    --border: rgba(245,166,35,0.2); --border-bright: rgba(245,166,35,0.45);
-    --text: #fff; --muted: rgba(255,255,255,0.55);
+    --gold:#f5a623; --orange:#ff6b00; --dark:#080810; --dark2:#0f0f1a;
+    --dark3:#161628; --dark4:#1e1e35; --border:rgba(245,166,35,0.2);
+    --border-bright:rgba(245,166,35,0.45); --text:#fff; --muted:rgba(255,255,255,0.55);
+    --dim:rgba(255,255,255,0.3);
   }
-  * { margin:0; padding:0; box-sizing:border-box; }
-  body { font-family:'Cairo',sans-serif; background:var(--dark); color:var(--text); min-height:100vh; }
-
-  /* Dashboard */
-  #dashboard { display:block; } /* تم التعديل لتظهر مباشرة بعد الحماية من السيرفر */
-
-  header {
-    background:rgba(8,8,16,0.95); border-bottom:1px solid var(--border);
-    backdrop-filter:blur(12px); position:sticky; top:0; z-index:100;
-    padding:0 5%; height:64px;
-    display:flex; align-items:center; justify-content:space-between;
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'Cairo',sans-serif;background:var(--dark);color:var(--text);min-height:100vh;}
+ 
+  /* ── HEADER ── */
+  header{background:rgba(8,8,16,0.97);border-bottom:1px solid var(--border);backdrop-filter:blur(12px);position:sticky;top:0;z-index:200;padding:0 5%;height:64px;display:flex;align-items:center;justify-content:space-between;}
+  .header-logo{font-size:18px;font-weight:900;color:var(--gold);}
+  .header-right{display:flex;align-items:center;gap:12px;}
+  .badge-count{background:rgba(245,166,35,0.15);border:1px solid var(--border);color:var(--gold);font-size:12px;font-weight:700;padding:4px 14px;border-radius:20px;}
+  .logout-btn{background:transparent;border:1px solid rgba(255,100,100,0.3);color:#ff8888;font-size:13px;font-weight:700;padding:6px 16px;border-radius:8px;cursor:pointer;font-family:'Cairo',sans-serif;transition:background 0.2s;}
+  .logout-btn:hover{background:rgba(255,100,100,0.1);}
+ 
+  /* ── MAIN ── */
+  .main{padding:28px 5%;max-width:1300px;margin:0 auto;}
+ 
+  /* ── TABS ── */
+  .tabs{display:flex;gap:8px;margin-bottom:24px;border-bottom:1px solid var(--border);padding-bottom:0;}
+  .tab-btn{background:none;border:none;color:var(--muted);font-family:'Cairo',sans-serif;font-size:15px;font-weight:700;padding:12px 24px;cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-1px;transition:all 0.2s;}
+  .tab-btn.active{color:var(--gold);border-bottom-color:var(--gold);}
+  .tab-btn:hover:not(.active){color:#fff;}
+  .tab-content{display:none;} .tab-content.active{display:block;}
+ 
+  /* ── STATS ── */
+  .stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px;}
+  .stat-card{background:var(--dark3);border:1px solid var(--border);border-radius:14px;padding:20px;text-align:center;}
+  .stat-card .num{font-size:32px;font-weight:900;color:var(--gold);}
+  .stat-card .lbl{font-size:12px;color:var(--muted);margin-top:4px;}
+ 
+  /* ── TOOLBAR ── */
+  .toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;align-items:center;}
+  .filter-btn{background:var(--dark3);border:1px solid var(--border);color:var(--muted);font-size:13px;font-weight:700;padding:8px 16px;border-radius:8px;cursor:pointer;font-family:'Cairo',sans-serif;transition:all 0.2s;}
+  .filter-btn.active,.filter-btn:hover{border-color:var(--gold);color:var(--gold);background:rgba(245,166,35,0.08);}
+  .refresh-btn{margin-right:auto;background:rgba(245,166,35,0.1);border:1px solid var(--border-bright);color:var(--gold);font-size:13px;font-weight:700;padding:8px 18px;border-radius:8px;cursor:pointer;font-family:'Cairo',sans-serif;}
+ 
+  /* ── TABLE ── */
+  .table-wrap{overflow-x:auto;border-radius:16px;border:1px solid var(--border);}
+  table{width:100%;border-collapse:collapse;}
+  thead th{background:var(--dark3);padding:13px 14px;font-size:13px;font-weight:700;color:var(--gold);text-align:right;border-bottom:1px solid var(--border);white-space:nowrap;}
+  tbody tr{border-bottom:1px solid rgba(255,255,255,0.04);transition:background 0.15s;}
+  tbody tr:last-child{border-bottom:none;} tbody tr:hover{background:rgba(255,255,255,0.03);}
+  td{padding:12px 14px;font-size:13px;color:var(--muted);vertical-align:middle;}
+  td.name{color:#fff;font-weight:700;} td.phone a{color:var(--gold);text-decoration:none;font-weight:700;}
+ 
+  .status-badge{display:inline-block;font-size:12px;font-weight:700;padding:4px 12px;border-radius:20px;}
+  .s-جديد{background:rgba(245,166,35,0.15);color:var(--gold);border:1px solid rgba(245,166,35,0.3);}
+  .s-تم_التواصل{background:rgba(52,152,219,0.15);color:#5dade2;border:1px solid rgba(52,152,219,0.3);}
+  .s-مكتمل{background:rgba(39,174,96,0.15);color:#2ecc71;border:1px solid rgba(39,174,96,0.3);}
+  .s-ملغي{background:rgba(220,50,50,0.12);color:#ff6b6b;border:1px solid rgba(220,50,50,0.3);}
+ 
+  .action-select{background:var(--dark2);border:1px solid var(--border);color:#fff;font-family:'Cairo',sans-serif;font-size:12px;padding:5px 10px;border-radius:8px;outline:none;cursor:pointer;}
+  .del-btn{background:none;border:none;color:#ff6b6b;font-size:16px;cursor:pointer;padding:4px 8px;border-radius:6px;transition:background 0.2s;}
+  .del-btn:hover{background:rgba(220,50,50,0.15);}
+  .expense-btn{background:rgba(245,166,35,0.1);border:1px solid rgba(245,166,35,0.3);color:var(--gold);font-size:12px;cursor:pointer;padding:5px 10px;border-radius:8px;font-family:'Cairo',sans-serif;font-weight:700;transition:background 0.2s;}
+  .expense-btn:hover{background:rgba(245,166,35,0.2);}
+  .empty{text-align:center;padding:60px 20px;color:var(--muted);font-size:16px;}
+ 
+  /* ── SLOTS MANAGER ── */
+  .slots-manager{background:var(--dark3);border:1px solid var(--border);border-radius:16px;padding:28px;}
+  .slots-manager h3{font-size:18px;font-weight:900;color:var(--gold);margin-bottom:6px;}
+  .slots-manager p{font-size:13px;color:var(--muted);margin-bottom:20px;}
+  .date-picker-row{display:flex;gap:12px;align-items:center;margin-bottom:20px;flex-wrap:wrap;}
+  .date-picker-row input[type=date]{background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:10px;color:#fff;font-family:'Cairo',sans-serif;font-size:14px;padding:10px 16px;outline:none;}
+  .date-picker-row input[type=date]:focus{border-color:var(--gold);}
+  .load-slots-btn{background:linear-gradient(135deg,var(--gold),var(--orange));color:#000;font-weight:900;font-size:14px;padding:10px 22px;border-radius:10px;border:none;cursor:pointer;font-family:'Cairo',sans-serif;}
+  .admin-slots-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:20px;}
+  .admin-slot{padding:10px 6px;border-radius:10px;font-family:'Cairo',sans-serif;font-size:13px;font-weight:700;text-align:center;cursor:pointer;border:1.5px solid var(--border);background:rgba(255,255,255,0.04);color:var(--muted);transition:all 0.2s;position:relative;}
+  .admin-slot.enabled{border-color:rgba(39,174,96,0.5);color:#2ecc71;background:rgba(39,174,96,0.1);}
+  .admin-slot.booked{border-color:rgba(220,50,50,0.4);color:#ff6b6b;background:rgba(220,50,50,0.1);cursor:not-allowed;}
+  .admin-slot.enabled:hover:not(.booked){background:rgba(39,174,96,0.18);}
+  .admin-slot:not(.enabled):not(.booked):hover{border-color:var(--gold);color:var(--gold);background:rgba(245,166,35,0.08);}
+  .slot-booked-name{font-size:10px;display:block;opacity:0.8;margin-top:2px;}
+  .save-slots-btn{background:linear-gradient(135deg,var(--gold),var(--orange));color:#000;font-weight:900;font-size:15px;padding:12px 32px;border-radius:12px;border:none;cursor:pointer;font-family:'Cairo',sans-serif;}
+  .slots-legend{display:flex;gap:20px;flex-wrap:wrap;margin-bottom:16px;font-size:13px;}
+  .legend-item{display:flex;align-items:center;gap:6px;}
+  .legend-dot{width:12px;height:12px;border-radius:3px;}
+ 
+  /* ── MODAL ── */
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px;}
+  .modal{background:var(--dark3);border:1px solid var(--border-bright);border-radius:20px;padding:32px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;}
+  .modal h3{font-size:20px;font-weight:900;color:var(--gold);margin-bottom:20px;}
+  .modal-form .form-group{margin-bottom:14px;}
+  .modal-form label{display:block;font-size:13px;font-weight:700;color:var(--muted);margin-bottom:6px;}
+  .modal-form input,.modal-form select,.modal-form textarea{width:100%;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:10px;color:#fff;font-family:'Cairo',sans-serif;font-size:14px;padding:10px 14px;outline:none;transition:border-color 0.2s;}
+  .modal-form input:focus,.modal-form select:focus,.modal-form textarea:focus{border-color:var(--gold);}
+  .modal-form select option{background:var(--dark3);}
+  .modal-actions{display:flex;gap:10px;margin-top:20px;}
+  .modal-save{flex:1;background:linear-gradient(135deg,var(--gold),var(--orange));color:#000;font-weight:900;font-size:15px;padding:12px;border-radius:10px;border:none;cursor:pointer;font-family:'Cairo',sans-serif;}
+  .modal-cancel{flex:1;background:var(--dark2);border:1px solid var(--border);color:var(--muted);font-weight:700;font-size:15px;padding:12px;border-radius:10px;cursor:pointer;font-family:'Cairo',sans-serif;}
+  .expense-list{margin-top:16px;}
+  .expense-item{background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;}
+  .expense-item .exp-name{font-weight:700;font-size:14px;}
+  .expense-item .exp-price{color:var(--gold);font-weight:900;font-size:15px;}
+  .expense-item .exp-del{background:none;border:none;color:#ff6b6b;cursor:pointer;font-size:16px;padding:2px 6px;}
+  .expense-total{background:rgba(245,166,35,0.1);border:1px solid rgba(245,166,35,0.3);border-radius:10px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;margin-top:10px;}
+  .expense-total span:first-child{font-size:14px;font-weight:700;color:var(--muted);}
+  .expense-total span:last-child{font-size:20px;font-weight:900;color:var(--gold);}
+ 
+  @media(max-width:900px){
+    .stats-row{grid-template-columns:1fr 1fr;}
+    .admin-slots-grid{grid-template-columns:repeat(4,1fr);}
+    .main{padding:20px 4%;}
   }
-  .header-logo { font-size:18px; font-weight:900; color:var(--gold); }
-  .header-right { display:flex; align-items:center; gap:16px; }
-  .badge-count {
-    background:rgba(245,166,35,0.15); border:1px solid var(--border);
-    color:var(--gold); font-size:12px; font-weight:700;
-    padding:4px 14px; border-radius:20px;
-  }
-  .logout-btn {
-    background:transparent; border:1px solid rgba(255,100,100,0.3);
-    color:#ff8888; font-size:13px; font-weight:700;
-    padding:6px 16px; border-radius:8px; cursor:pointer;
-    font-family:'Cairo',sans-serif; transition:background 0.2s;
-  }
-  .logout-btn:hover { background:rgba(255,100,100,0.1); }
-
-  .main { padding:32px 5%; max-width:1300px; margin:0 auto; }
-
-  /* Stats */
-  .stats-row {
-    display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:28px;
-  }
-  .stat-card {
-    background:var(--dark3); border:1px solid var(--border); border-radius:14px;
-    padding:20px; text-align:center;
-  }
-  .stat-card .num { font-size:32px; font-weight:900; color:var(--gold); }
-  .stat-card .lbl { font-size:12px; color:var(--muted); margin-top:4px; }
-
-  /* Filter */
-  .toolbar {
-    display:flex; gap:10px; flex-wrap:wrap; margin-bottom:20px; align-items:center;
-  }
-  .filter-btn {
-    background:var(--dark3); border:1px solid var(--border); color:var(--muted);
-    font-size:13px; font-weight:700; padding:8px 18px; border-radius:8px;
-    cursor:pointer; font-family:'Cairo',sans-serif; transition:all 0.2s;
-  }
-  .filter-btn.active, .filter-btn:hover { border-color:var(--gold); color:var(--gold); background:rgba(245,166,35,0.08); }
-  
-  .exp-btn {
-    background:rgba(52,152,219,0.1); border:1px solid rgba(52,152,219,0.4); color:#5dade2;
-    font-size:11px; font-weight:700; padding:4px 10px; border-radius:6px;
-    cursor:pointer; font-family:'Cairo',sans-serif; transition:all 0.2s;
-  }
-  .exp-btn:hover { background:rgba(52,152,219,0.2); }
-
-  .refresh-btn {
-    margin-right:auto; background:rgba(245,166,35,0.1); border:1px solid var(--border-bright);
-    color:var(--gold); font-size:13px; font-weight:700; padding:8px 18px;
-    border-radius:8px; cursor:pointer; font-family:'Cairo',sans-serif;
-  }
-
-  /* Table */
-  .table-wrap { overflow-x:auto; border-radius:16px; border:1px solid var(--border); }
-  table { width:100%; border-collapse:collapse; }
-  thead th {
-    background:var(--dark3); padding:14px 16px;
-    font-size:13px; font-weight:700; color:var(--gold);
-    text-align:right; border-bottom:1px solid var(--border);
-    white-space:nowrap;
-  }
-  tbody tr { border-bottom:1px solid rgba(255,255,255,0.04); transition:background 0.15s; }
-  tbody tr:last-child { border-bottom:none; }
-  tbody tr:hover { background:rgba(255,255,255,0.03); }
-  td { padding:14px 16px; font-size:14px; color:var(--muted); vertical-align:middle; }
-  td.name { color:#fff; font-weight:700; }
-  td.phone a { color:var(--gold); text-decoration:none; font-weight:700; }
-  td.date { font-size:12px; white-space:nowrap; }
-
-  .status-badge {
-    display:inline-block; font-size:12px; font-weight:700;
-    padding:4px 12px; border-radius:20px;
-  }
-  .s-جديد      { background:rgba(245,166,35,0.15); color:var(--gold);   border:1px solid rgba(245,166,35,0.3); }
-  .s-تم_التواصل { background:rgba(52,152,219,0.15); color:#5dade2;      border:1px solid rgba(52,152,219,0.3); }
-  .s-مكتمل     { background:rgba(39,174,96,0.15);  color:#2ecc71;       border:1px solid rgba(39,174,96,0.3); }
-  .s-ملغي      { background:rgba(220,50,50,0.12);  color:#ff6b6b;       border:1px solid rgba(220,50,50,0.3); }
-
-  .action-select {
-    background:var(--dark2); border:1px solid var(--border); color:#fff;
-    font-family:'Cairo',sans-serif; font-size:12px; padding:5px 10px;
-    border-radius:8px; outline:none; cursor:pointer; margin-bottom: 4px;
-  }
-
-  .del-btn {
-    background:none; border:none; color:#ff6b6b; font-size:16px;
-    cursor:pointer; padding:4px 8px; border-radius:6px;
-    transition:background 0.2s;
-  }
-  .del-btn:hover { background:rgba(220,50,50,0.15); }
-
-  .empty { text-align:center; padding:60px 20px; color:var(--muted); font-size:16px; }
-
-  /* Modal Expenses */
-  .modal {
-    display:none; position:fixed; top:0; left:0; width:100%; height:100%;
-    background:rgba(8,8,16,0.85); backdrop-filter:blur(6px); z-index:1000;
-    align-items:center; justify-content:center;
-  }
-  .modal-content {
-    background:var(--dark3); border:1px solid var(--border); border-radius:16px;
-    padding:24px; width:100%; max-width:450px;
-  }
-  .modal h3 { color:var(--gold); margin-bottom:16px; font-size:18px; }
-  .expenses-list { max-height:220px; overflow-y:auto; margin-bottom:16px; padding-left:10px; }
-  .expense-item {
-    display:flex; justify-content:space-between; align-items:center;
-    padding:10px; border-bottom:1px solid rgba(255,255,255,0.05); font-size:14px;
-  }
-  .expense-item .desc { color:#fff; }
-  .expense-item .cost { color:var(--gold); font-weight:700; }
-  .exp-inputs { display:flex; gap:10px; margin-bottom:12px; }
-  
-  .form-input {
-    background:rgba(255,255,255,0.05); border:1px solid var(--border);
-    border-radius:8px; color:#fff; font-family:'Cairo',sans-serif;
-    font-size:13px; padding:10px 12px; outline:none; transition:border-color 0.2s;
-    width:100%;
-  }
-  .form-input:focus { border-color:var(--gold); }
-  
-  .btn-primary {
-    width:100%; background:linear-gradient(135deg,var(--gold),var(--orange));
-    color:#000; font-weight:900; font-size:14px; padding:10px;
-    border-radius:8px; border:none; cursor:pointer; font-family:'Cairo',sans-serif;
-  }
-  .btn-primary:hover { opacity:0.9; }
-
-  /* Scrollbar */
-  ::-webkit-scrollbar { width:6px; height:6px; }
-  ::-webkit-scrollbar-track { background:transparent; }
-  ::-webkit-scrollbar-thumb { background:rgba(245,166,35,0.3); border-radius:4px; }
-
-  @media(max-width:768px) {
-    .stats-row { grid-template-columns:1fr 1fr; }
-    .main { padding:20px 4%; }
+  @media(max-width:600px){
+    .admin-slots-grid{grid-template-columns:repeat(3,1fr);}
   }
 </style>
 </head>
 <body>
-
-<!-- Dashboard -->
-<div id="dashboard">
-  <header>
-    <div class="header-logo">🚗 لوحة التحكم</div>
-    <div class="header-right">
-      <span class="badge-count" id="totalBadge">0 حجز</span>
-      <button class="logout-btn" onclick="logout()">خروج</button>
-    </div>
-  </header>
-
-  <div class="main">
-    <div class="stats-row" id="statsRow">
+ 
+<header>
+  <div class="header-logo">🚗 لوحة التحكم — مركز آدم</div>
+  <div class="header-right">
+    <span class="badge-count" id="totalBadge">0 حجز</span>
+    <button class="logout-btn" onclick="logout()">خروج</button>
+  </div>
+</header>
+ 
+<div class="main">
+ 
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('bookings',this)">📋 الحجوزات</button>
+    <button class="tab-btn" onclick="switchTab('slots',this)">📅 إدارة المواعيد</button>
+  </div>
+ 
+  <!-- TAB: BOOKINGS -->
+  <div class="tab-content active" id="tab-bookings">
+    <div class="stats-row">
       <div class="stat-card"><div class="num" id="sAll">0</div><div class="lbl">إجمالي الحجوزات</div></div>
-      <div class="stat-card"><div class="num" id="sNew" style="color:#f5a623">0</div><div class="lbl">جديد</div></div>
+      <div class="stat-card"><div class="num" id="sNew" style="color:var(--gold)">0</div><div class="lbl">جديد</div></div>
       <div class="stat-card"><div class="num" id="sDone" style="color:#2ecc71">0</div><div class="lbl">مكتمل</div></div>
       <div class="stat-card"><div class="num" id="sContact" style="color:#5dade2">0</div><div class="lbl">تم التواصل</div></div>
     </div>
-
+ 
     <div class="toolbar">
       <button class="filter-btn active" onclick="setFilter('الكل',this)">الكل</button>
       <button class="filter-btn" onclick="setFilter('جديد',this)">🟡 جديد</button>
@@ -191,241 +156,286 @@
       <button class="filter-btn" onclick="setFilter('ملغي',this)">🔴 ملغي</button>
       <button class="refresh-btn" onclick="loadBookings()">🔄 تحديث</button>
     </div>
-
+ 
     <div class="table-wrap">
       <table>
         <thead>
           <tr>
-            <th>#</th>
-            <th>الاسم</th>
-            <th>الجوال</th>
-            <th>السيارة</th>
-            <th>الخدمة</th>
-            <th>موعد الحجز</th>
-            <th>ملاحظات</th>
-            <th>الحالة</th>
-            <th>المصروفات</th>
-            <th>تاريخ الإنشاء</th>
-            <th>إجراءات</th>
+            <th>#</th><th>الاسم</th><th>الجوال</th><th>السيارة</th>
+            <th>الخدمة</th><th>التاريخ</th><th>الوقت</th><th>ملاحظات</th>
+            <th>الحالة</th><th>مصاريف</th><th>تغيير</th><th>حذف</th>
           </tr>
         </thead>
         <tbody id="tableBody"></tbody>
       </table>
     </div>
   </div>
-</div>
-
-<!-- Modal المصروفات -->
-<div id="expensesModal" class="modal">
-  <div class="modal-content">
-    <h3>💸 مصروفات وقطع غيار (حجز #<span id="expBookingId"></span>)</h3>
-    <div id="expensesList" class="expenses-list"></div>
-    <div class="exp-inputs">
-      <input type="text" id="expDesc" class="form-input" placeholder="الوصف (مثال: تغيير زيت، تيل فرامل)">
-      <input type="number" id="expCost" class="form-input" placeholder="التكلفة" style="width:100px">
+ 
+  <!-- TAB: SLOTS MANAGER -->
+  <div class="tab-content" id="tab-slots">
+    <div class="slots-manager">
+      <h3>⚙️ إدارة المواعيد المتاحة</h3>
+      <p>اختار يوم وحدد المواعيد المتاحة — العملاء هيشوفوا بس المواعيد اللي تفعّلها</p>
+      <div class="date-picker-row">
+        <input type="date" id="admin-date">
+        <button class="load-slots-btn" onclick="loadAdminSlots()">📅 عرض اليوم</button>
+      </div>
+      <div class="slots-legend">
+        <div class="legend-item"><div class="legend-dot" style="background:rgba(39,174,96,0.4)"></div> متاح (مفعّل)</div>
+        <div class="legend-item"><div class="legend-dot" style="background:rgba(245,166,35,0.3)"></div> معطّل</div>
+        <div class="legend-item"><div class="legend-dot" style="background:rgba(220,50,50,0.4)"></div> محجوز</div>
+      </div>
+      <div class="admin-slots-grid" id="adminSlotsGrid"><div style="grid-column:1/-1;text-align:center;color:var(--dim);padding:20px">اختر يوم لعرض مواعيده</div></div>
+      <button class="save-slots-btn" id="saveSlotsBtn" style="display:none" onclick="saveSlots()">💾 حفظ المواعيد</button>
     </div>
-    <button class="btn-primary" onclick="addExpense()">➕ إضافة مصروف</button>
-    <button class="logout-btn" onclick="closeExpenses()" style="margin-top:12px; width:100%">إغلاق</button>
+  </div>
+ 
+</div>
+ 
+<!-- EXPENSES MODAL -->
+<div class="modal-overlay" id="expenseModal" style="display:none" onclick="closeExpenseModal(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <h3>🔧 مصاريف السيارة</h3>
+    <div id="expenseBookingInfo" style="background:rgba(245,166,35,0.08);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:16px;font-size:13px;color:var(--muted);"></div>
+    <div class="expense-list" id="expenseList"></div>
+    <div class="expense-total" id="expenseTotal" style="display:none"><span>الإجمالي</span><span id="expenseTotalVal">0 ج</span></div>
+    <div class="modal-form" style="margin-top:16px;border-top:1px solid var(--border);padding-top:16px;">
+      <p style="font-size:13px;font-weight:700;color:var(--gold);margin-bottom:12px;">➕ إضافة بند جديد</p>
+      <div class="form-group"><label>الوصف (قطعة غيار / خدمة)</label><input type="text" id="exp-desc" placeholder="مثال: فلتر زيت، حزام توقيت..."></div>
+      <div class="form-group"><label>السعر (جنيه)</label><input type="number" id="exp-price" placeholder="0" min="0"></div>
+      <div class="modal-actions">
+        <button class="modal-save" onclick="addExpense()">➕ إضافة</button>
+        <button class="modal-cancel" onclick="document.getElementById('expenseModal').style.display='none'">إغلاق</button>
+      </div>
+    </div>
   </div>
 </div>
-
+ 
 <script>
+  const ADMIN_KEY = 'adam2025admin';
   let allBookings = [];
   let currentFilter = 'الكل';
-  let currentExpBooking = null;
-
-  // جلب البيانات تلقائياً عند فتح الصفحة (الاعتماد على Session)
-  window.onload = loadBookings;
-
-  function loadBookings() {
-    fetch('/api/bookings')
-      .then(r => r.json())
-      .then(data => { 
-        if (data.success) { 
-          allBookings = data.bookings; 
-          renderAll(); 
-        } 
-      })
-      .catch(err => console.error("Error loading bookings:", err));
+  let currentExpenseBookingId = null;
+  let adminSlotState = {};
+  let adminSlotDate = '';
+ 
+  // ── TABS
+  function switchTab(name, btn) {
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    btn.classList.add('active');
   }
-
+ 
+  // ── LOGOUT
   function logout() {
-    window.location.href = '/logout';
+    window.location.href = '/';
   }
-
+ 
+  // ── LOAD BOOKINGS
+  async function loadBookings() {
+    try {
+      const res = await fetch('/api/bookings', { headers: { 'x-admin-key': ADMIN_KEY } });
+      const data = await res.json();
+      if (data.success) { allBookings = data.bookings; renderAll(); }
+    } catch(e) { console.error(e); }
+  }
+ 
   function setFilter(f, btn) {
     currentFilter = f;
     document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     renderTable();
   }
-
+ 
   function renderAll() {
     const total   = allBookings.length;
     const newB    = allBookings.filter(b => b.status === 'جديد').length;
     const done    = allBookings.filter(b => b.status === 'مكتمل').length;
     const contact = allBookings.filter(b => b.status === 'تم التواصل').length;
-
     document.getElementById('sAll').textContent     = total;
     document.getElementById('sNew').textContent     = newB;
     document.getElementById('sDone').textContent    = done;
     document.getElementById('sContact').textContent = contact;
     document.getElementById('totalBadge').textContent = total + ' حجز';
-
     renderTable();
   }
-
+ 
   function renderTable() {
-    const filtered = currentFilter === 'الكل'
-      ? allBookings
-      : allBookings.filter(b => b.status === currentFilter);
-
+    const filtered = currentFilter === 'الكل' ? allBookings : allBookings.filter(b => b.status === currentFilter);
     const tbody = document.getElementById('tableBody');
-    if (!filtered.length) {
-      tbody.innerHTML = `<tr><td colspan="11" class="empty">📋 لا يوجد حجوزات</td></tr>`;
-      return;
-    }
-
-    tbody.innerHTML = filtered.map(b => {
+    if (!filtered.length) { tbody.innerHTML = `<tr><td colspan="12" class="empty">📋 لا يوجد حجوزات</td></tr>`; return; }
+    tbody.innerHTML = filtered.map((b, idx) => {
       const sc = b.status.replace(' ', '_');
-      
-      // تفاصيل تاريخ الإنشاء
-      const date = b.created_at ? b.created_at.split(' ')[0] : '—';
-      const time = b.created_at ? b.created_at.split(' ')[1]?.slice(0,5) : '';
-      
-      // تفاصيل الموعد المطلوب
-      const appDate = b.appointment_date || '—';
-      const appTime = b.appointment_time || '';
-
-      // زر المصروفات
-      const expensesBtn = b.status === 'تم التواصل' 
-        ? `<button class="exp-btn" onclick="openExpenses(${b.id})">💸 أضف / عرض</button>` 
-        : `<span style="font-size:11px; color:var(--muted)">غير متاح</span>`;
-
+      const expCount = (b.expenses || []).length;
       return `
         <tr>
-          <td style="color:var(--gold);font-weight:700">#${b.id}</td>
+          <td style="color:var(--gold);font-weight:700">${idx + 1}</td>
           <td class="name">${esc(b.name)}</td>
           <td class="phone"><a href="tel:${esc(b.phone)}">${esc(b.phone)}</a></td>
           <td>${esc(b.car)}</td>
           <td>${esc(b.service)}</td>
-          <td class="date" style="color:var(--gold)">${esc(appDate)}<br><span style="color:#fff">${esc(appTime)}</span></td>
-          <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(b.notes)}">${esc(b.notes||'—')}</td>
+          <td style="white-space:nowrap">${esc(b.date||'—')}</td>
+          <td style="white-space:nowrap">${esc(b.slot||'—')}</td>
+          <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(b.notes)}">${esc(b.notes||'—')}</td>
           <td><span class="status-badge s-${sc}">${esc(b.status)}</span></td>
-          <td>${expensesBtn}</td>
-          <td class="date">${date}<br><span style="opacity:.5;font-size:11px">${time}</span></td>
           <td>
-            <select class="action-select" onchange="changeStatus(${b.id}, this.value)" data-current="${esc(b.status)}">
-              <option value="">تغيير الحالة...</option>
-              <option value="جديد" ${b.status === 'جديد' ? 'selected' : ''}>جديد</option>
-              <option value="تم التواصل" ${b.status === 'تم التواصل' ? 'selected' : ''}>تم التواصل</option>
-              <option value="مكتمل" ${b.status === 'مكتمل' ? 'selected' : ''}>مكتمل</option>
-              <option value="ملغي" ${b.status === 'ملغي' ? 'selected' : ''}>ملغي</option>
-            </select>
-            <br>
-            <button class="del-btn" onclick="deleteBooking(${b.id})" title="حذف الحجز">🗑 حذف</button>
+            <button class="expense-btn" onclick="openExpenseModal(${b.id})">
+              🔧 ${expCount > 0 ? expCount + ' بند' : 'إضافة'}
+            </button>
           </td>
+          <td>
+            <select class="action-select" onchange="changeStatus(${b.id}, this.value)">
+              <option value="">تغيير...</option>
+              <option>جديد</option><option>تم التواصل</option><option>مكتمل</option><option>ملغي</option>
+            </select>
+          </td>
+          <td><button class="del-btn" onclick="deleteBooking(${b.id})" title="حذف">🗑</button></td>
         </tr>`;
     }).join('');
   }
-
-  function changeStatus(id, status) {
+ 
+  async function changeStatus(id, status) {
     if (!status) return;
-    fetch('/api/bookings/' + id, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status })
-    }).then(r => r.json()).then(d => { if (d.success) loadBookings(); });
+    await fetch('/api/bookings/' + id, { method: 'PATCH', headers: { 'Content-Type': 'application/json', 'x-admin-key': ADMIN_KEY }, body: JSON.stringify({ status }) });
+    loadBookings();
   }
-
-  function deleteBooking(id) {
-    if (!confirm('هل أنت متأكد من الحذف التام للحجز وكل بياناته؟')) return;
-    fetch('/api/bookings/' + id, { method: 'DELETE' })
-      .then(r => r.json())
-      .then(d => { if (d.success) loadBookings(); });
+ 
+  async function deleteBooking(id) {
+    if (!confirm('هل أنت متأكد من الحذف؟\nسيتم إعادة ترتيب الأرقام تلقائياً.')) return;
+    await fetch('/api/bookings/' + id, { method: 'DELETE', headers: { 'x-admin-key': ADMIN_KEY } });
+    loadBookings();
   }
-
-  /* ──────── المصروفات ──────── */
-  function openExpenses(bid) {
-    currentExpBooking = bid;
-    document.getElementById('expBookingId').textContent = bid;
-    document.getElementById('expensesModal').style.display = 'flex';
-    loadExpensesList();
+ 
+  // ── EXPENSES
+  function openExpenseModal(bookingId) {
+    currentExpenseBookingId = bookingId;
+    const b = allBookings.find(x => x.id === bookingId);
+    if (!b) return;
+    document.getElementById('expenseBookingInfo').innerHTML =
+      `<strong style="color:#fff">${esc(b.name)}</strong> — ${esc(b.car)}<br>📅 ${esc(b.date||'')} ${esc(b.slot||'')} | ${esc(b.service)}`;
+    document.getElementById('exp-desc').value = '';
+    document.getElementById('exp-price').value = '';
+    renderExpenseList(b.expenses || []);
+    document.getElementById('expenseModal').style.display = 'flex';
   }
-
-  function closeExpenses() {
-    document.getElementById('expensesModal').style.display = 'none';
-    currentExpBooking = null;
-    document.getElementById('expDesc').value = '';
-    document.getElementById('expCost').value = '';
+ 
+  function renderExpenseList(expenses) {
+    const list = document.getElementById('expenseList');
+    const total = document.getElementById('expenseTotal');
+    const totalVal = document.getElementById('expenseTotalVal');
+    if (!expenses.length) { list.innerHTML = '<div style="text-align:center;color:var(--dim);padding:16px;font-size:13px">لا توجد مصاريف مضافة بعد</div>'; total.style.display='none'; return; }
+    list.innerHTML = expenses.map((e, i) => `
+      <div class="expense-item">
+        <div><div class="exp-name">${esc(e.desc)}</div><div style="font-size:11px;color:var(--dim)">${e.added_at||''}</div></div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <span class="exp-price">${Number(e.price).toLocaleString('ar')} ج</span>
+          <button class="exp-del" onclick="removeExpense(${i})" title="حذف">🗑</button>
+        </div>
+      </div>`).join('');
+    const sum = expenses.reduce((a, e) => a + Number(e.price), 0);
+    totalVal.textContent = sum.toLocaleString('ar') + ' ج';
+    total.style.display = 'flex';
   }
-
-  function loadExpensesList() {
-    const listDiv = document.getElementById('expensesList');
-    listDiv.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:12px;">جاري التحميل...</div>';
-    
-    fetch(`/api/bookings/${currentExpBooking}/expenses`)
-      .then(r => r.json())
-      .then(data => {
-        if (data.success) {
-          if (data.expenses.length === 0) {
-            listDiv.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:12px;">لا يوجد مصروفات مسجلة حتى الآن</div>';
-          } else {
-            let total = 0;
-            listDiv.innerHTML = data.expenses.map(e => {
-              total += parseFloat(e.cost);
-              return `
-                <div class="expense-item">
-                  <span class="desc">${esc(e.description)}</span>
-                  <span class="cost">${e.cost} ج</span>
-                </div>
-              `;
-            }).join('');
-            // إضافة الإجمالي
-            listDiv.innerHTML += `
-              <div class="expense-item" style="border-top:1px dashed var(--border); margin-top:5px;">
-                <span class="desc" style="color:var(--gold); font-weight:bold;">الإجمالي</span>
-                <span class="cost">${total} ج</span>
-              </div>
-            `;
-          }
-        }
-      });
-  }
-
-  function addExpense() {
-    const desc = document.getElementById('expDesc').value.trim();
-    const cost = document.getElementById('expCost').value.trim();
-
-    if (!desc || !cost) {
-      alert("يرجى إدخال الوصف والتكلفة");
-      return;
+ 
+  async function addExpense() {
+    const desc = document.getElementById('exp-desc').value.trim();
+    const price = parseFloat(document.getElementById('exp-price').value);
+    if (!desc) { alert('يرجى إدخال الوصف'); return; }
+    if (isNaN(price) || price < 0) { alert('يرجى إدخال سعر صحيح'); return; }
+    const res = await fetch('/api/bookings/' + currentExpenseBookingId + '/expenses', {
+      method: 'POST', headers: { 'Content-Type': 'application/json', 'x-admin-key': ADMIN_KEY },
+      body: JSON.stringify({ desc, price })
+    });
+    const data = await res.json();
+    if (data.success) {
+      document.getElementById('exp-desc').value = '';
+      document.getElementById('exp-price').value = '';
+      await loadBookings();
+      const b = allBookings.find(x => x.id === currentExpenseBookingId);
+      if (b) renderExpenseList(b.expenses || []);
     }
-
-    fetch(`/api/bookings/${currentExpBooking}/expenses`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ description: desc, cost: cost })
-    })
-    .then(r => r.json())
-    .then(data => {
-      if (data.success) {
-        document.getElementById('expDesc').value = '';
-        document.getElementById('expCost').value = '';
-        loadExpensesList(); // إعادة تحميل القائمة
-      } else {
-        alert(data.message || "حدث خطأ");
+  }
+ 
+  async function removeExpense(idx) {
+    if (!confirm('حذف هذا البند؟')) return;
+    const res = await fetch('/api/bookings/' + currentExpenseBookingId + '/expenses/' + idx, {
+      method: 'DELETE', headers: { 'x-admin-key': ADMIN_KEY }
+    });
+    const data = await res.json();
+    if (data.success) {
+      await loadBookings();
+      const b = allBookings.find(x => x.id === currentExpenseBookingId);
+      if (b) renderExpenseList(b.expenses || []);
+    }
+  }
+ 
+  function closeExpenseModal(e) {
+    if (e.target === document.getElementById('expenseModal')) document.getElementById('expenseModal').style.display = 'none';
+  }
+ 
+  // ── ADMIN SLOTS MANAGER
+  const ALL_HOURS = ['9:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','18:00','19:00','20:00','21:00'];
+ 
+  document.getElementById('admin-date').min = new Date().toISOString().split('T')[0];
+ 
+  async function loadAdminSlots() {
+    adminSlotDate = document.getElementById('admin-date').value;
+    if (!adminSlotDate) { alert('يرجى اختيار يوم'); return; }
+    const [confRes, bookRes] = await Promise.all([
+      fetch('/api/slot-config?date=' + adminSlotDate, { headers: { 'x-admin-key': ADMIN_KEY } }),
+      fetch('/api/slots?date=' + adminSlotDate)
+    ]);
+    const confData = await confRes.json();
+    const bookData = await bookRes.json();
+    const enabledSlots = confData.enabled || ALL_HOURS;
+    const bookedSlots  = (bookData.slots || []).filter(s => s.booked).map(s => s.value);
+ 
+    adminSlotState = {};
+    ALL_HOURS.forEach(h => { adminSlotState[h] = enabledSlots.includes(h); });
+ 
+    renderAdminSlots(bookedSlots);
+    document.getElementById('saveSlotsBtn').style.display = 'inline-block';
+  }
+ 
+  function renderAdminSlots(bookedSlots) {
+    const grid = document.getElementById('adminSlotsGrid');
+    grid.innerHTML = '';
+    ALL_HOURS.forEach(h => {
+      const isBooked  = bookedSlots.includes(h);
+      const isEnabled = adminSlotState[h];
+      const div = document.createElement('div');
+      div.className = 'admin-slot' + (isBooked ? ' booked' : isEnabled ? ' enabled' : '');
+      div.innerHTML = `<span>${h}</span>${isBooked ? '<span class="slot-booked-name">محجوز</span>' : isEnabled ? '<span class="slot-booked-name">متاح</span>' : '<span class="slot-booked-name">معطّل</span>'}`;
+      if (!isBooked) {
+        div.onclick = () => {
+          adminSlotState[h] = !adminSlotState[h];
+          renderAdminSlots(bookedSlots);
+        };
       }
+      grid.appendChild(div);
     });
   }
-
+ 
+  async function saveSlots() {
+    if (!adminSlotDate) return;
+    const enabled = ALL_HOURS.filter(h => adminSlotState[h]);
+    const res = await fetch('/api/slot-config', {
+      method: 'POST', headers: { 'Content-Type': 'application/json', 'x-admin-key': ADMIN_KEY },
+      body: JSON.stringify({ date: adminSlotDate, enabled })
+    });
+    const data = await res.json();
+    if (data.success) { alert('✅ تم حفظ المواعيد بنجاح'); }
+  }
+ 
   function esc(str) {
     if (!str) return '';
     return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
-
-  // تحديث تلقائي كل 60 ثانية للوحة التحكم
-  setInterval(loadBookings, 60000);
+ 
+  // ── INIT: load directly (no login screen)
+  loadBookings();
+  setInterval(() => loadBookings(), 60000);
 </script>
 </body>
 </html>
