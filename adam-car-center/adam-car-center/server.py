@@ -1,52 +1,20 @@
-from flask import Flask, request, jsonify, send_from_directory, session, redirect
+from flask import Flask, request, jsonify, session, redirect, send_from_directory
+from flask_socketio import SocketIO, emit
 import sqlite3
 import os
 from datetime import datetime
+import json
 
 app = Flask(__name__, static_folder='public', static_url_path='')
-app.secret_key = 'miar_secure_key_2026'
+app.secret_key = os.environ.get("SECRET_KEY", "dev_secret")
 
-DB = 'bookings.db'
-ADMIN_KEY = 'adam2025admin'
+socketio = SocketIO(app, cors_allowed_origins="*")
 
+DB = "bookings.db"
 
-# ================= DATABASE =================
+ADMIN_KEY = os.environ.get("ADMIN_KEY", "adam2025admin")
 
-def init_db():
-    conn = sqlite3.connect(DB)
-
-    conn.execute('''
-        CREATE TABLE IF NOT EXISTS bookings (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL,
-            phone TEXT NOT NULL,
-            car TEXT NOT NULL,
-            service TEXT NOT NULL,
-            booking_date TEXT NOT NULL,
-            booking_time TEXT NOT NULL,
-            notes TEXT DEFAULT '',
-            status TEXT DEFAULT 'جديد',
-            total_cost REAL DEFAULT 0,
-            total_profit REAL DEFAULT 0,
-            created_at TEXT DEFAULT CURRENT_TIMESTAMP
-        )
-    ''')
-
-    conn.execute('''
-        CREATE TABLE IF NOT EXISTS expenses (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            booking_id INTEGER,
-            item_name TEXT,
-            cost_price REAL,
-            sell_price REAL,
-            profit REAL,
-            FOREIGN KEY (booking_id) REFERENCES bookings(id)
-        )
-    ''')
-
-    conn.commit()
-    conn.close()
-
+# ================= DB =================
 
 def get_db():
     conn = sqlite3.connect(DB)
@@ -54,69 +22,160 @@ def get_db():
     return conn
 
 
-# ================= VALIDATION =================
-
-def valid_phone(phone):
-    return phone.startswith('01') and len(phone) == 11 and phone.isdigit()
-
-
-def booking_exists(date, time):
+def init_db():
     conn = get_db()
 
-    row = conn.execute(
-        '''
-        SELECT id FROM bookings
-        WHERE booking_date=? AND booking_time=?
-        ''',
-        (date, time)
-    ).fetchone()
+    # BOOKINGS (atomic protection added)
+    conn.execute("""
+    CREATE TABLE IF NOT EXISTS bookings (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        phone TEXT NOT NULL,
+        car TEXT NOT NULL,
+        service TEXT NOT NULL,
+        booking_date TEXT NOT NULL,
+        booking_time TEXT NOT NULL,
+        notes TEXT DEFAULT '',
+        status TEXT DEFAULT 'جديد',
+        total_cost REAL DEFAULT 0,
+        total_profit REAL DEFAULT 0,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(booking_date, booking_time)
+    )
+    """)
 
+    # EXPENSES
+    conn.execute("""
+    CREATE TABLE IF NOT EXISTS expenses (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        booking_id INTEGER,
+        item_name TEXT,
+        cost_price REAL,
+        sell_price REAL,
+        profit REAL
+    )
+    """)
+
+    # AUDIT LOG
+    conn.execute("""
+    CREATE TABLE IF NOT EXISTS audit_log (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        action TEXT,
+        entity TEXT,
+        entity_id INTEGER,
+        data TEXT,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
+
+    conn.commit()
     conn.close()
 
-    return row is not None
+
+# ================= HELPERS =================
+
+def log_action(action, entity, entity_id, data):
+    conn = get_db()
+    conn.execute("""
+        INSERT INTO audit_log (action, entity, entity_id, data)
+        VALUES (?, ?, ?, ?)
+    """, (action, entity, entity_id, json.dumps(data)))
+    conn.commit()
+    conn.close()
 
 
-# ================= LOGIN =================
-
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-
-    if request.method == 'POST':
-
-        password = request.form.get('password')
-
-        if password == ADMIN_KEY:
-            session['admin'] = True
-            return redirect('/admin')
-
-        return '❌ كلمة المرور غلط', 401
-
-    return send_from_directory('public', 'login.html')
-
-
-@app.route('/logout')
-def logout():
-    session.clear()
-    return redirect('/login')
+def valid_phone(phone):
+    return phone.isdigit() and phone.startswith("01") and len(phone) == 11
 
 
 def is_admin():
-    return session.get('admin')
+    return session.get("role") == "admin"
 
 
-# ================= BOOKING =================
+def is_staff():
+    return session.get("role") in ["admin", "staff"]
+
+
+# ================= AUTH =================
+
+@app.route("/login", methods=["POST"])
+def login():
+    password = request.json.get("password")
+
+    if password == ADMIN_KEY:
+        session["role"] = "admin"
+        return jsonify({"success": True, "role": "admin"})
+
+    return jsonify({"success": False}), 401
+
+
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect("/login")
+
+
+# ================= ATOMIC BOOKING =================
+
+@app.route("/api/booking", methods=["POST"])
+def booking():
+
+    data = request.json
+
+    name = (data.get("name") or "").strip()
+    phone = (data.get("phone") or "").strip()
+    car = (data.get("car") or "").strip()
+    service = (data.get("service") or "").strip()
+    date = (data.get("booking_date") or "").strip()
+    time = (data.get("booking_time") or "").strip()
+    notes = (data.get("notes") or "").strip()
+
+    if not all([name, phone, car, service, date, time]):
+        return jsonify({"success": False, "message": "Missing fields"}), 400
+
+    if not valid_phone(phone):
+        return jsonify({"success": False, "message": "Invalid phone"}), 400
+
+    try:
+        conn = get_db()
+        conn.execute("BEGIN IMMEDIATE")
+
+        cur = conn.execute("""
+            INSERT INTO bookings
+            (name, phone, car, service, booking_date, booking_time, notes)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        """, (name, phone, car, service, date, time, notes))
+
+        booking_id = cur.lastrowid
+
+        conn.commit()
+
+        log_action("CREATE", "booking", booking_id, data)
+
+        socketio.emit("new_booking", {"id": booking_id, "name": name})
+
+        return jsonify({
+            "success": True,
+            "id": booking_id
+        })
+
+    except sqlite3.IntegrityError:
+        return jsonify({
+            "success": False,
+            "message": "هذا الموعد محجوز بالفعل"
+        }), 409
+
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
 # ================= AVAILABLE TIMES =================
 
-@app.route('/api/available-times')
+@app.route("/api/available-times")
 def available_times():
 
-    date = request.args.get('date')
-
-    if not date:
-        return jsonify({
-            'success': False,
-            'times': []
-        })
+    date = request.args.get("date")
 
     all_times = [
         "09:00","10:00","11:00","12:00",
@@ -127,413 +186,159 @@ def available_times():
     conn = get_db()
 
     booked = conn.execute(
-        'SELECT booking_time FROM bookings WHERE booking_date=?',
+        "SELECT booking_time FROM bookings WHERE booking_date=?",
         (date,)
     ).fetchall()
 
-    conn.close()
+    booked = {b["booking_time"] for b in booked}
 
-    booked_times = set([b['booking_time'] for b in booked])
+    available = [t for t in all_times if t not in booked]
 
-    available = [t for t in all_times if t not in booked_times]
+    return jsonify({"success": True, "times": available})
 
-    return jsonify({
-        'success': True,
-        'times': available
-    })
 
-@app.route('/api/booking', methods=['POST'])
-def add_booking():
+# ================= BOOKINGS =================
 
-    data = request.get_json()
+@app.route("/api/bookings")
+def bookings():
 
-    name = (data.get('name') or '').strip()
-    phone = (data.get('phone') or '').strip()
-    car = (data.get('car') or '').strip()
-    service = (data.get('service') or '').strip()
-    booking_date = (data.get('booking_date') or '').strip()
-    booking_time = (data.get('booking_time') or '').strip()
-    notes = (data.get('notes') or '').strip()
-
-    if not all([name, phone, car, service, booking_date, booking_time]):
-        return jsonify({
-            'success': False,
-            'message': 'يرجى ملء كل البيانات'
-        }), 400
-
-    if not valid_phone(phone):
-        return jsonify({
-            'success': False,
-            'message': 'رقم الهاتف غير صحيح'
-        }), 400
-
-    # الوقت من 9 لـ 9
-    try:
-        hour = int(booking_time.split(':')[0])
-
-        if hour < 9 or hour > 21:
-            return jsonify({
-                'success': False,
-                'message': 'الحجز متاح من 9 صباحاً لـ 9 مساءً فقط'
-            }), 400
-
-    except:
-        return jsonify({
-            'success': False,
-            'message': 'وقت غير صالح'
-        }), 400
-
-    if booking_exists(booking_date, booking_time):
-        return jsonify({
-            'success': False,
-            'message': 'هذا الموعد محجوز بالفعل'
-        }), 400
+    if not is_admin():
+        return jsonify({"success": False}), 401
 
     conn = get_db()
 
-    cur = conn.execute(
-        '''
-        INSERT INTO bookings
-        (
-            name,
-            phone,
-            car,
-            service,
-            booking_date,
-            booking_time,
-            notes
-        )
-        VALUES (?,?,?,?,?,?,?)
-        ''',
-        (
-            name,
-            phone,
-            car,
-            service,
-            booking_date,
-            booking_time,
-            notes
-        )
-    )
-
-    conn.commit()
-
-    booking_id = cur.lastrowid
-
-    conn.close()
+    rows = conn.execute("""
+        SELECT * FROM bookings ORDER BY id DESC
+    """).fetchall()
 
     return jsonify({
-        'success': True,
-        'message': 'تم الحجز بنجاح',
-        'id': booking_id
+        "success": True,
+        "bookings": [dict(r) for r in rows]
     })
 
 
-# ================= GET BOOKINGS =================
+# ================= STATUS UPDATE =================
 
-@app.route('/api/bookings', methods=['GET'])
-def get_bookings():
-
-    if not is_admin():
-        return jsonify({
-            'success': False,
-            'message': 'غير مصرح'
-        }), 401
-
-    conn = get_db()
-
-    bookings = conn.execute(
-        '''
-        SELECT * FROM bookings
-        ORDER BY id DESC
-        '''
-    ).fetchall()
-
-    result = []
-
-    for booking in bookings:
-
-        expenses = conn.execute(
-            '''
-            SELECT * FROM expenses
-            WHERE booking_id=?
-            ''',
-            (booking['id'],)
-        ).fetchall()
-
-        result.append({
-            **dict(booking),
-            'expenses': [dict(e) for e in expenses]
-        })
-
-    conn.close()
-
-    return jsonify({
-        'success': True,
-        'bookings': result
-    })
-
-
-# ================= UPDATE STATUS =================
-
-@app.route('/api/bookings/<int:bid>', methods=['PATCH'])
-def update_booking(bid):
+@app.route("/api/bookings/<int:bid>", methods=["PATCH"])
+def update_status(bid):
 
     if not is_admin():
-        return jsonify({
-            'success': False
-        }), 401
+        return jsonify({"success": False}), 401
 
-    data = request.get_json()
+    status = request.json.get("status")
 
-    status = data.get('status')
-
-    allowed = [
-        'جديد',
-        'تم التواصل',
-        'مكتمل',
-        'ملغي'
-    ]
+    allowed = ["جديد", "تم التواصل", "مكتمل", "ملغي"]
 
     if status not in allowed:
-        return jsonify({
-            'success': False,
-            'message': 'حالة غير صالحة'
-        }), 400
+        return jsonify({"success": False}), 400
 
     conn = get_db()
 
     conn.execute(
-        '''
-        UPDATE bookings
-        SET status=?
-        WHERE id=?
-        ''',
+        "UPDATE bookings SET status=? WHERE id=?",
         (status, bid)
     )
 
     conn.commit()
-    conn.close()
 
-    return jsonify({
-        'success': True
-    })
+    log_action("UPDATE_STATUS", "booking", bid, {"status": status})
+
+    return jsonify({"success": True})
 
 
-# ================= ADD EXPENSE =================
+# ================= EXPENSE + PROFIT =================
 
-@app.route('/api/bookings/<int:bid>/expense', methods=['POST'])
-def add_expense(bid):
+@app.route("/api/bookings/<int:bid>/expense", methods=["POST"])
+def expense(bid):
 
     if not is_admin():
-        return jsonify({
-            'success': False
-        }), 401
+        return jsonify({"success": False}), 401
 
-    data = request.get_json()
+    data = request.json
 
-    item_name = data.get('item_name')
-    cost_price = float(data.get('cost_price'))
-    sell_price = float(data.get('sell_price'))
+    try:
+        cost = float(data.get("cost_price", 0))
+        sell = float(data.get("sell_price", 0))
+    except:
+        return jsonify({"success": False}), 400
 
-    profit = sell_price - cost_price
+    profit = sell - cost
 
     conn = get_db()
 
-    conn.execute(
-        '''
+    conn.execute("""
         INSERT INTO expenses
-        (
-            booking_id,
-            item_name,
-            cost_price,
-            sell_price,
-            profit
-        )
-        VALUES (?,?,?,?,?)
-        ''',
-        (
-            bid,
-            item_name,
-            cost_price,
-            sell_price,
-            profit
-        )
-    )
+        (booking_id, item_name, cost_price, sell_price, profit)
+        VALUES (?, ?, ?, ?, ?)
+    """, (bid, data["item_name"], cost, sell, profit))
 
-    # totals
-    totals = conn.execute(
-        '''
+    totals = conn.execute("""
         SELECT
-        SUM(cost_price) as total_cost,
-        SUM(profit) as total_profit
+        SUM(cost_price) as cost,
+        SUM(profit) as profit
         FROM expenses
         WHERE booking_id=?
-        ''',
-        (bid,)
-    ).fetchone()
+    """, (bid,)).fetchone()
 
-    conn.execute(
-        '''
+    conn.execute("""
         UPDATE bookings
-        SET total_cost=?,
-            total_profit=?
+        SET total_cost=?, total_profit=?
         WHERE id=?
-        ''',
-        (
-            totals['total_cost'] or 0,
-            totals['total_profit'] or 0,
-            bid
-        )
-    )
+    """, (totals["cost"] or 0, totals["profit"] or 0, bid))
 
     conn.commit()
-    conn.close()
 
-    return jsonify({
-        'success': True
-    })
+    log_action("ADD_EXPENSE", "booking", bid, data)
+
+    return jsonify({"success": True})
 
 
-# ================= DASHBOARD STATS =================
+# ================= DASHBOARD (PROFIT DAILY) =================
 
-@app.route('/api/dashboard')
-def dashboard_stats():
+@app.route("/api/dashboard")
+def dashboard():
 
     if not is_admin():
-        return jsonify({
-            'success': False
-        }), 401
+        return jsonify({"success": False}), 401
 
     conn = get_db()
 
-    stats = conn.execute(
-        '''
+    stats = conn.execute("""
         SELECT
-        COUNT(*) as total_bookings,
-        SUM(total_cost) as total_costs,
-        SUM(total_profit) as total_profits
+        COUNT(*) as bookings,
+        IFNULL(SUM(total_profit),0) as profit
         FROM bookings
-        '''
+        WHERE date(created_at)=date('now')
+    """).fetchone()
+
+    return jsonify({"success": True, "stats": dict(stats)})
+
+
+# ================= INVOICE =================
+
+@app.route("/api/invoice/<int:bid>")
+def invoice(bid):
+
+    conn = get_db()
+
+    booking = conn.execute(
+        "SELECT * FROM bookings WHERE id=?",
+        (bid,)
     ).fetchone()
 
-    conn.close()
-
-    return jsonify({
-        'success': True,
-        'stats': dict(stats)
-    })
-
-
-# ================= DELETE =================
-
-@app.route('/api/bookings/<int:bid>', methods=['DELETE'])
-def delete_booking(bid):
-
-    if not is_admin():
-        return jsonify({
-            'success': False
-        }), 401
-
-    conn = get_db()
-
-    conn.execute(
-        'DELETE FROM expenses WHERE booking_id=?',
+    expenses = conn.execute(
+        "SELECT * FROM expenses WHERE booking_id=?",
         (bid,)
-    )
-
-    conn.execute(
-        'DELETE FROM bookings WHERE id=?',
-        (bid,)
-    )
-
-    conn.commit()
-
-    # ترتيب الـ IDs
-    rows = conn.execute(
-        '''
-        SELECT * FROM bookings
-        ORDER BY id
-        '''
     ).fetchall()
 
-    conn.execute('DELETE FROM bookings')
-
-    new_id = 1
-
-    for row in rows:
-
-        conn.execute(
-            '''
-            INSERT INTO bookings
-            (
-                id,
-                name,
-                phone,
-                car,
-                service,
-                booking_date,
-                booking_time,
-                notes,
-                status,
-                total_cost,
-                total_profit,
-                created_at
-            )
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
-            ''',
-            (
-                new_id,
-                row['name'],
-                row['phone'],
-                row['car'],
-                row['service'],
-                row['booking_date'],
-                row['booking_time'],
-                row['notes'],
-                row['status'],
-                row['total_cost'],
-                row['total_profit'],
-                row['created_at']
-            )
-        )
-
-        new_id += 1
-
-    conn.commit()
-    conn.close()
-
     return jsonify({
-        'success': True
+        "booking": dict(booking),
+        "expenses": [dict(e) for e in expenses]
     })
 
 
-# ================= PAGES =================
+# ================= RUN =================
 
-@app.route('/')
-def home():
-    return send_from_directory('public', 'index.html')
-
-
-@app.route('/admin')
-def admin():
-
-    if not is_admin():
-        return redirect('/login')
-
-    return send_from_directory('public', 'admin.html')
-
-
-# ================= START =================
-
-if __name__ == '__main__':
-
+if __name__ == "__main__":
     init_db()
-
-    print('✅ Server Running')
-
-    app.run(
-        host='0.0.0.0',
-        port=5000,
-        debug=False
-    )
+    socketio.run(app, host="0.0.0.0", port=5000, debug=True)
