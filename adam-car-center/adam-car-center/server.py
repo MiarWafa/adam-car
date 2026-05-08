@@ -82,17 +82,23 @@ def get_slots():
     date = request.args.get('date', '')
     if not date:
         return jsonify({'success': False, 'message': 'يرجى تحديد التاريخ'}), 400
+
     conn = get_db()
     enabled = get_enabled_slots(conn, date)
     booked  = get_booked_slots(conn, date)
     conn.close()
+
     slots = []
-    slots.append({
-    'value': h,
-    'label': h,
-    'booked': h in booked,
-    'available': h in enabled
-})
+
+    for h in ALL_HOURS:   # 🔥 ده اللي كان ناقص
+        slots.append({
+            'value': h,
+            'label': h,
+            'booked': h in booked,
+            'available': h in enabled
+        })
+
+    return jsonify({'success': True, 'slots': slots})
             
     return jsonify({'success': True, 'slots': slots})
  
