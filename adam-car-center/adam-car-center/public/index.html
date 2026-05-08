@@ -1037,8 +1037,7 @@
     "
   ></div>
 </div>
-      <button class="form-submit" id="submitBtn" onclick="submitForm()">✅ أرسل الطلب الآن</button>
-      <div id="form-msg" style="display:none; margin-top:14px; padding:12px 16px; border-radius:10px; font-size:14px; font-weight:700; text-align:center;"></div>
+     
     </div>
   </div>
 </section>
@@ -1399,31 +1398,7 @@
     }
   }
 
-      const data = await res.json();
-
-      if (data.success) {
-        msg.style.display = 'block';
-        msg.style.background = 'rgba(39,174,96,0.15)';
-        msg.style.border = '1px solid rgba(39,174,96,0.4)';
-        msg.style.color = '#2ecc71';
-        msg.textContent = '✅ ' + data.message;
-        btn.textContent = '✅ تم الإرسال';
-        // Reset fields
-        document.querySelectorAll('.contact-form input, .contact-form textarea').forEach(el => el.value = '');
-        document.querySelector('select').value = '';
-      } else {
-        throw new Error(data.message);
-      }
-    } catch (err) {
-      msg.style.display = 'block';
-      msg.style.background = 'rgba(220,50,50,0.15)';
-      msg.style.border = '1px solid rgba(220,50,50,0.4)';
-      msg.style.color = '#ff6b6b';
-      msg.textContent = '❌ حدث خطأ، حاول مرة أخرى';
-      btn.disabled = false;
-      btn.textContent = '✅ أرسل الطلب الآن';
-    }
-  }
+      
 </script>
 </body>
 </html>
