@@ -87,9 +87,13 @@ def get_slots():
     booked  = get_booked_slots(conn, date)
     conn.close()
     slots = []
-    for h in ALL_HOURS:
-        if h in enabled:
-            slots.append({'value': h, 'label': h, 'booked': h in booked, 'available': True})
+    slots.append({
+    'value': h,
+    'label': h,
+    'booked': h in booked,
+    'available': h in enabled
+})
+            
     return jsonify({'success': True, 'slots': slots})
  
 # ─── API: GET slot config (admin) ───────────────────────────
