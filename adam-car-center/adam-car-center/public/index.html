@@ -1082,323 +1082,205 @@
 
 <script>
   
-  document.getElementById('hamburger').addEventListener('click', () => {
-    document.getElementById('mobileMenu').classList.toggle('open');
+  <script>
+document.getElementById('hamburger').addEventListener('click', () => {
+  document.getElementById('mobileMenu').classList.toggle('open');
+});
+
+function closeMobile() {
+  document.getElementById('mobileMenu').classList.remove('open');
+}
+
+window.addEventListener('scroll', () => {
+  document.getElementById('navbar').style.background =
+    window.scrollY > 80
+      ? 'rgba(8,8,16,0.98)'
+      : 'rgba(8,8,16,0.92)';
+});
+
+const obs = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) e.target.classList.add('visible');
   });
+}, { threshold: 0.1 });
 
-  function closeMobile() {
-    document.getElementById('mobileMenu').classList.remove('open');
-  }
+document.querySelectorAll('.fade-in').forEach(el => obs.observe(el));
 
-  window.addEventListener('scroll', () => {
-    document.getElementById('navbar').style.background =
-      window.scrollY > 80
-        ? 'rgba(8,8,16,0.98)'
-        : 'rgba(8,8,16,0.92)';
+function animateCounter(el) {
+  const t = parseInt(el.dataset.target),
+    step = t / (2000 / 16);
+  let c = 0;
+
+  const ti = setInterval(() => {
+    c += step;
+    if (c >= t) {
+      c = t;
+      clearInterval(ti);
+    }
+    el.textContent = Math.floor(c).toLocaleString('ar');
+  }, 16);
+}
+
+const so = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      document.querySelectorAll('[data-target]').forEach(animateCounter);
+      so.disconnect();
+    }
   });
+}, { threshold: 0.5 });
 
-  const obs = new IntersectionObserver(entries => {
-    entries.forEach(e => {
-      if (e.isIntersecting) e.target.classList.add('visible');
-    });
-  }, { threshold: 0.1 });
+const se = document.querySelector('.hero-stats');
+if (se) so.observe(se);
 
-  document.querySelectorAll('.fade-in').forEach(el => obs.observe(el));
+// =========================
+// SMART BOOKING SYSTEM
+// =========================
 
-  function animateCounter(el) {
-    const t = parseInt(el.dataset.target),
-      step = t / (2000 / 16);
-    let c = 0;
+const API_BASE = "https://YOUR-BACKEND.onrender.com";
 
-    const ti = setInterval(() => {
-      c += step;
+document.getElementById('f-date').min =
+  new Date().toISOString().split('T')[0];
 
-      if (c >= t) {
-        c = t;
-        clearInterval(ti);
-      }
+function validateEgPhone(p) {
+  return /^(\+20|0020|0)?1[0-2,5]{1}[0-9]{8}$/.test(
+    p.replace(/\s/g, '')
+  );
+}
 
-      el.textContent = Math.floor(c).toLocaleString('ar');
-    }, 16);
-  }
+let selectedSlot = '';
 
-  const so = new IntersectionObserver(entries => {
-    entries.forEach(e => {
-      if (e.isIntersecting) {
-        document.querySelectorAll('[data-target]').forEach(animateCounter);
-        so.disconnect();
-      }
-    });
-  }, { threshold: 0.5 });
+async function loadSlots() {
+  const date = document.getElementById('f-date').value;
+  if (!date) return;
 
-  const se = document.querySelector('.hero-stats');
-  if (se) so.observe(se);
+  document.getElementById('slots-section').style.display = 'block';
 
-  // =========================
-  // SMART BOOKING SYSTEM
-  // =========================
+  document.getElementById('slots-container').innerHTML = `
+    <div class="slots-loading">⏳ جاري تحميل المواعيد...</div>
+  `;
 
-  const API_BASE = "https://YOUR-BACKEND.onrender.com";
+  selectedSlot = '';
+  document.getElementById('f-slot').value = '';
 
-  document.getElementById('f-date').min =
-    new Date().toISOString().split('T')[0];
-
-  function validateEgPhone(p) {
-    return /^(\+20|0020|0)?1[0-2,5]{1}[0-9]{8}$/.test(
-      p.replace(/\s/g, '')
-    );
-  }
-
-  let selectedSlot = '';
-
-  async function loadSlots() {
-    const date = document.getElementById('f-date').value;
-
-    if (!date) return;
-
-    document.getElementById('slots-section').style.display = 'block';
-
+  try {
+    const res = await fetch(API_BASE + '/api/slots?date=' + date);
+    const data = await res.json();
+    renderSlots(data.slots);
+  } catch (err) {
     document.getElementById('slots-container').innerHTML = `
-      <div class="slots-loading">
-        ⏳ جاري تحميل المواعيد...
+      <div class="slots-loading" style="color:#ff6b6b">
+        ❌ خطأ في تحميل المواعيد
       </div>
     `;
+  }
+}
 
-    selectedSlot = '';
-    document.getElementById('f-slot').value = '';
-
-    try {
-      const res = await fetch(
-        API_BASE + '/api/slots?date=' + date
-      );
-
-      const data = await res.json();
-
-      renderSlots(data.slots);
-
-    } catch (err) {
-
-      document.getElementById('slots-container').innerHTML = `
-        <div class="slots-loading" style="color:#ff6b6b">
-          ❌ خطأ في تحميل المواعيد
-        </div>
-      `;
-
-      console.error(err);
-    }
+function renderSlots(slots) {
+  if (!slots || !slots.length) {
+    document.getElementById('slots-container').innerHTML =
+      `<div class="slots-loading">لا توجد مواعيد متاحة</div>`;
+    return;
   }
 
-  function renderSlots(slots) {
+  const grid = document.createElement('div');
+  grid.className = 'slots-grid';
 
-    if (!slots || !slots.length) {
+  slots.forEach(s => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'slot-btn' + (s.booked ? ' booked' : '');
+    btn.textContent = (s.booked ? '🔴 ' : '✅ ') + s.label;
 
-      document.getElementById('slots-container').innerHTML = `
-        <div class="slots-loading">
-          لا توجد مواعيد متاحة في هذا اليوم
-        </div>
-      `;
+    if (!s.booked) {
+      btn.onclick = () => {
+        document.querySelectorAll('.slot-btn')
+          .forEach(b => b.classList.remove('selected'));
 
-      return;
+        btn.classList.add('selected');
+        selectedSlot = s.value;
+        document.getElementById('f-slot').value = s.value;
+      };
     }
 
-    const grid = document.createElement('div');
-    grid.className = 'slots-grid';
+    grid.appendChild(btn);
+  });
 
-    slots.forEach(s => {
+  const container = document.getElementById('slots-container');
+  container.innerHTML = '';
+  container.appendChild(grid);
+}
 
-      const btn = document.createElement('button');
+async function submitForm() {
+  const name = document.getElementById('f-name').value.trim();
+  const phone = document.getElementById('f-phone').value.trim();
+  const car = document.getElementById('f-car').value.trim();
+  const service = document.getElementById('f-service').value;
+  const date = document.getElementById('f-date').value;
+  const slot = document.getElementById('f-slot').value;
+  const notes = document.getElementById('f-notes').value.trim();
 
-      btn.type = 'button';
+  const btn = document.getElementById('submitBtn');
+  const msg = document.getElementById('form-msg');
 
-      btn.className =
-        'slot-btn' + (s.booked ? ' booked' : '');
+  const showErr = txt => {
+    msg.style.display = 'block';
+    msg.style.background = 'rgba(220,50,50,0.15)';
+    msg.style.color = '#ff6b6b';
+    msg.textContent = txt;
+  };
 
-      btn.textContent =
-        s.booked
-          ? '🔴 ' + s.label
-          : '✅ ' + s.label;
+  if (!name) return showErr('⚠️ أدخل الاسم');
+  if (!phone || !validateEgPhone(phone)) return showErr('⚠️ رقم غير صحيح');
+  if (!car) return showErr('⚠️ أدخل السيارة');
+  if (!service) return showErr('⚠️ اختر الخدمة');
+  if (!date) return showErr('⚠️ اختر التاريخ');
+  if (!slot) return showErr('⚠️ اختر الوقت');
 
-      if (!s.booked) {
+  btn.disabled = true;
+  btn.textContent = '⏳ جاري الإرسال...';
+  msg.style.display = 'none';
 
-        btn.onclick = () => {
-
-          document
-            .querySelectorAll('.slot-btn')
-            .forEach(b => b.classList.remove('selected'));
-
-          btn.classList.add('selected');
-
-          selectedSlot = s.value;
-
-          document.getElementById('f-slot').value =
-            s.value;
-        };
-      }
-
-      grid.appendChild(btn);
+  try {
+    const res = await fetch(API_BASE + '/api/booking', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, phone, car, service, date, slot, notes })
     });
 
-    document.getElementById('slots-container').innerHTML = '';
+    const data = await res.json();
 
-    document
-      .getElementById('slots-container')
-      .appendChild(grid);
-  }
-
-  async function submitForm() {
-
-    const name =
-      document.getElementById('f-name').value.trim();
-
-    const phone =
-      document.getElementById('f-phone').value.trim();
-
-    const car =
-      document.getElementById('f-car').value.trim();
-
-    const service =
-      document.getElementById('f-service').value;
-
-    const date =
-      document.getElementById('f-date').value;
-
-    const slot =
-      document.getElementById('f-slot').value;
-
-    const notes =
-      document.getElementById('f-notes').value.trim();
-
-    const btn =
-      document.getElementById('submitBtn');
-
-    const msg =
-      document.getElementById('form-msg');
-
-    const showErr = txt => {
-
+    if (data.success) {
       msg.style.display = 'block';
+      msg.style.background = 'rgba(39,174,96,0.15)';
+      msg.style.color = '#2ecc71';
+      msg.textContent = '✅ ' + data.message;
 
-      msg.style.background =
-        'rgba(220,50,50,0.15)';
+      btn.textContent = '✅ تم الإرسال';
 
-      msg.style.border =
-        '1px solid rgba(220,50,50,0.4)';
-
-      msg.style.color = '#ff6b6b';
-
-      msg.textContent = txt;
-    };
-
-    if (!name)
-      return showErr('⚠️ يرجى إدخال الاسم');
-
-    if (!phone)
-      return showErr('⚠️ يرجى إدخال رقم الجوال');
-
-    if (!validateEgPhone(phone))
-      return showErr('⚠️ رقم الجوال غير صحيح');
-
-    if (!car)
-      return showErr('⚠️ يرجى إدخال نوع السيارة');
-
-    if (!service)
-      return showErr('⚠️ يرجى اختيار الخدمة');
-
-    if (!date)
-      return showErr('⚠️ يرجى اختيار التاريخ');
-
-    if (!slot)
-      return showErr('⚠️ يرجى اختيار الوقت');
-
-    btn.disabled = true;
-    btn.textContent = '⏳ جاري الإرسال...';
-
-    msg.style.display = 'none';
-
-    try {
-
-      const res = await fetch(
-        API_BASE + '/api/booking',
-        {
-          method: 'POST',
-
-          headers: {
-            'Content-Type': 'application/json'
-          },
-
-          body: JSON.stringify({
-            name,
-            phone,
-            car,
-            service,
-            date,
-            slot,
-            notes
-          })
-        }
+      ['f-name','f-phone','f-car','f-notes'].forEach(id =>
+        document.getElementById(id).value = ''
       );
 
-      const data = await res.json();
-
-      if (data.success) {
-
-        msg.style.display = 'block';
-
-        msg.style.background =
-          'rgba(39,174,96,0.15)';
-
-        msg.style.border =
-          '1px solid rgba(39,174,96,0.4)';
-
-        msg.style.color = '#2ecc71';
-
-        msg.textContent =
-          '✅ ' + data.message;
-
-        btn.textContent = '✅ تم الإرسال';
-
-        [
-          'f-name',
-          'f-phone',
-          'f-car',
-          'f-notes'
-        ].forEach(id => {
-          document.getElementById(id).value = '';
-        });
-
-        document.getElementById('f-service').value = '';
-        document.getElementById('f-date').value = '';
-        document.getElementById('f-slot').value = '';
-
-        document.getElementById('slots-section').style.display =
-          'none';
-
-        selectedSlot = '';
-
-      } else {
-
-        showErr('❌ ' + data.message);
-
-        btn.disabled = false;
-
-        btn.textContent =
-          '✅ أرسل الطلب الآن';
-      }
-
-    } catch (err) {
-
-      showErr('❌ خطأ في الاتصال، حاول مرة أخرى');
-
+      document.getElementById('f-service').value = '';
+      document.getElementById('f-date').value = '';
+      document.getElementById('f-slot').value = '';
+      document.getElementById('slots-section').style.display = 'none';
+    } else {
+      showErr('❌ ' + data.message);
       btn.disabled = false;
-
-      btn.textContent =
-        '✅ أرسل الطلب الآن';
-
-      console.error(err);
+      btn.textContent = 'أرسل الطلب';
     }
+
+  } catch (err) {
+    showErr('❌ خطأ في الاتصال');
+    btn.disabled = false;
+    btn.textContent = 'أرسل الطلب';
   }
+}
+</script>
 
       
-</script>
+
 </body>
 </html>
