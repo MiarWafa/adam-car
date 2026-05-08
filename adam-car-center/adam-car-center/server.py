@@ -64,17 +64,25 @@ def reorder_ids(conn):
  
 # ─── SLOTS HELPERS ───────────────────────────────────────────
 def get_enabled_slots(conn, date):
-    row = conn.execute('SELECT enabled FROM slot_config WHERE date=?', (date,)).fetchone()
-    if row:
-        try:
-            return json.loads(row['enabled'])
-        except:
-            pass
-    return ALL_HOURS  # default: all enabled
+    row = conn.execute(
+        'SELECT enabled FROM slot_config WHERE date=?',
+        (date,)
+    ).fetchone()
+
+    if not row or not row['enabled']:
+        return ALL_HOURS
+
+    try:
+        data = json.loads(row['enabled'])
+        if isinstance(data, list):
+            return data
+        return ALL_HOURS
+    except:
+        return ALL_HOURS
  
 def get_booked_slots(conn, date):
     rows = conn.execute("SELECT slot FROM bookings WHERE date=? AND status != 'ملغي'", (date,)).fetchall()
-    return [r['slot'] for r in rows if r['slot']]
+    return [r['slot'] for r in rows if r['slot'] is not None]
  
 # ─── API: GET available slots ────────────────────────────────
 @app.route('/api/slots')
