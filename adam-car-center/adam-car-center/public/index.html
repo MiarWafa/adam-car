@@ -906,58 +906,175 @@
     </div>
 
     <div class="contact-form">
-      <div class="form-title">🗓️ احجز موعدك الآن</div>
 
-      <div class="form-group">
-        <label>الاسم الكريم</label>
-        <input type="text" placeholder="اكتب اسمك هنا">
-      </div>
-
-      <div class="form-group">
-        <label>رقم الجوال</label>
-        <input type="tel" placeholder="+20XXXXXXXXXX">
-      </div>
-      <div class="form-group">
-      <label>تاريخ الحجز</label>
-      <input type="date" id="booking-date">
-    </div>
-
-    <!-- ✅ إضافة الوقت (NEW) -->
-    <div class="form-group">
-      <label>وقت الحجز</label>
-      <input type="time" id="booking-time" min="09:00" max="21:00">
-    </div>
-
-      <div class="form-group">
-        <label>نوع السيارة</label>
-        <input type="text" placeholder="مثال: BMW 320i 2020">
-      </div>
-
-      <div class="form-group">
-        <label>الخدمة المطلوبة</label>
-        <select>
-          <option value="">اختر الخدمة...</option>
-          <option>ميكانيكا</option>
-          <option>كهرباء</option>
-          <option>صيانة تكييف / شحن فريون</option>
-          <option>تغيير زيت</option>
-          <option>إطارات</option>
-          <option>بطاريات</option>
-          <option>كشف أعطال</option>
-          <option>دوكو وهيكل</option>
-          <option>أخرى</option>
-        </select>
-      </div>
-
-      <div class="form-group">
-        <label>ملاحظات إضافية</label>
-        <textarea placeholder="اوصف المشكلة أو أي تفاصيل مفيدة..."></textarea>
-      </div>
-
-      <button class="form-submit" id="submitBtn" onclick="submitForm()">✅ أرسل الطلب الآن</button>
-      <div id="form-msg" style="display:none; margin-top:14px; padding:12px 16px; border-radius:10px; font-size:14px; font-weight:700; text-align:center;"></div>
-    </div>
+  <div class="form-title">
+    🗓️ احجز موعدك الآن
   </div>
+
+  <!-- الاسم -->
+  <div class="form-group">
+    <label>الاسم الكريم</label>
+
+    <input
+      type="text"
+      id="customer-name"
+      placeholder="اكتب اسمك هنا"
+    >
+  </div>
+
+  <!-- الهاتف -->
+  <div class="form-group">
+    <label>رقم الجوال</label>
+
+    <input
+      type="tel"
+      id="customer-phone"
+      placeholder="01XXXXXXXXX"
+      maxlength="11"
+    >
+  </div>
+
+  <!-- السيارة -->
+  <div class="form-group">
+    <label>نوع السيارة</label>
+
+    <input
+      type="text"
+      id="customer-car"
+      placeholder="مثال: BMW 320i 2020"
+    >
+  </div>
+
+  <!-- الخدمة -->
+  <div class="form-group">
+
+    <label>الخدمة المطلوبة</label>
+
+    <select id="customer-service">
+
+      <option value="">
+        اختر الخدمة...
+      </option>
+
+      <option>
+        ميكانيكا
+      </option>
+
+      <option>
+        كهرباء
+      </option>
+
+      <option>
+        صيانة تكييف / شحن فريون
+      </option>
+
+      <option>
+        تغيير زيت
+      </option>
+
+      <option>
+        إطارات
+      </option>
+
+      <option>
+        بطاريات
+      </option>
+
+      <option>
+        كشف أعطال
+      </option>
+
+      <option>
+        دوكو وهيكل
+      </option>
+
+      <option>
+        أخرى
+      </option>
+
+    </select>
+
+  </div>
+
+  <!-- التاريخ -->
+  <div class="form-group">
+
+    <label>
+      تاريخ الحجز
+    </label>
+
+    <input
+      type="date"
+      id="booking-date"
+      onchange="loadAvailableTimes()"
+    >
+
+  </div>
+
+  <!-- الوقت -->
+  <div class="form-group">
+
+    <label>
+      الموعد المتاح
+    </label>
+
+    <select id="booking-time">
+
+      <option value="">
+        اختر الموعد
+      </option>
+
+    </select>
+
+    <small style="
+      display:block;
+      margin-top:8px;
+      color:rgba(255,255,255,0.5);
+      font-size:12px;
+    ">
+      ⏰ المواعيد من 9 صباحاً حتى 9 مساءً
+    </small>
+
+  </div>
+
+  <!-- الملاحظات -->
+  <div class="form-group">
+
+    <label>
+      ملاحظات إضافية
+    </label>
+
+    <textarea
+      id="customer-notes"
+      placeholder="اوصف المشكلة أو أي تفاصيل مفيدة..."
+    ></textarea>
+
+  </div>
+
+  <!-- زر الإرسال -->
+  <button
+    class="form-submit"
+    id="submitBtn"
+    onclick="submitForm()"
+  >
+    ✅ أرسل الطلب الآن
+  </button>
+
+  <!-- الرسائل -->
+  <div
+    id="form-msg"
+    style="
+      display:none;
+      margin-top:14px;
+      padding:12px 16px;
+      border-radius:10px;
+      font-size:14px;
+      font-weight:700;
+      text-align:center;
+    "
+  ></div>
+
+</div>
 </section>
 
 <!-- ─── FOOTER ─── -->
@@ -1000,127 +1117,334 @@
 
 <script>
   // Hamburger menu
-  
   const hamburger = document.getElementById('hamburger');
   const mobileMenu = document.getElementById('mobileMenu');
+
   hamburger.addEventListener('click', () => {
     mobileMenu.classList.toggle('open');
   });
-  const dateInput = document.getElementById('booking-date');
-  const today = new Date().toISOString().split('T')[0];
-  if (dateInput) dateInput.min = today;
+
   function closeMobile() {
     mobileMenu.classList.remove('open');
   }
 
   // Scroll fade-in
   const observer = new IntersectionObserver((entries) => {
-    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); } });
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.classList.add('visible');
+      }
+    });
   }, { threshold: 0.1 });
-  document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+
+  document.querySelectorAll('.fade-in').forEach(el => {
+    observer.observe(el);
+  });
 
   // Counter animation
   function animateCounter(el) {
+
     const target = parseInt(el.dataset.target);
     const duration = 2000;
+
     const step = target / (duration / 16);
+
     let current = 0;
+
     const timer = setInterval(() => {
+
       current += step;
-      if (current >= target) { current = target; clearInterval(timer); }
+
+      if (current >= target) {
+        current = target;
+        clearInterval(timer);
+      }
+
       el.textContent = Math.floor(current).toLocaleString('ar');
+
     }, 16);
   }
 
   const statsObserver = new IntersectionObserver((entries) => {
+
     entries.forEach(e => {
+
       if (e.isIntersecting) {
+
         document.querySelectorAll('[data-target]').forEach(animateCounter);
+
         statsObserver.disconnect();
       }
+
     });
+
   }, { threshold: 0.5 });
 
   const statsEl = document.querySelector('.hero-stats');
-  if (statsEl) statsObserver.observe(statsEl);
 
-  // Nav scroll effect
+  if (statsEl) {
+    statsObserver.observe(statsEl);
+  }
+
+  // Navbar effect
   window.addEventListener('scroll', () => {
+
     const nav = document.getElementById('navbar');
+
     nav.style.background = window.scrollY > 80
       ? 'rgba(8,8,16,0.98)'
       : 'rgba(8,8,16,0.92)';
+
   });
 
-  // Form submit - real API
+  // تحميل المواعيد المتاحة
+  async function loadAvailableTimes() {
+
+    const dateInput = document.getElementById('booking-date');
+    const timeSelect = document.getElementById('booking-time');
+
+    if (!dateInput || !timeSelect) return;
+
+    const date = dateInput.value;
+
+    if (!date) return;
+
+    try {
+
+      const res = await fetch('/api/available-times?date=' + date);
+
+      const data = await res.json();
+
+      timeSelect.innerHTML = '';
+
+      if (!data.success) {
+
+        timeSelect.innerHTML = `
+          <option value="">
+            لا توجد مواعيد متاحة
+          </option>
+        `;
+
+        return;
+      }
+
+      // أول اختيار
+      const defaultOption = document.createElement('option');
+
+      defaultOption.value = '';
+
+      defaultOption.textContent = 'اختر الموعد';
+
+      timeSelect.appendChild(defaultOption);
+
+      data.times.forEach(t => {
+
+        const option = document.createElement('option');
+
+        option.value = t;
+
+        option.textContent = t;
+
+        timeSelect.appendChild(option);
+
+      });
+
+    } catch(err) {
+
+      console.error(err);
+
+    }
+  }
+
+  // التحقق من رقم الهاتف المصري
+  function validPhone(phone) {
+
+    const regex = /^01[0125][0-9]{8}$/;
+
+    return regex.test(phone);
+  }
+
+  // إرسال الفورم
   async function submitForm() {
-    const name    = document.querySelector('input[placeholder="اكتب اسمك هنا"]').value.trim();
-    const phone   = document.querySelector('input[type="tel"]').value.trim();
-    const car     = document.querySelector('input[placeholder^="مثال"]').value.trim();
-    const service = document.querySelector('select').value;
-    const notes   = document.querySelector('textarea').value.trim();
-     const booking_date = document.getElementById('booking-date')?.value;
-    const booking_time = document.getElementById('booking-time')?.value;
 
-    const btn     = document.getElementById('submitBtn');
-    const msg     = document.getElementById('form-msg');
+    const name = document
+      .querySelector('input[placeholder="اكتب اسمك هنا"]')
+      .value
+      .trim();
 
-     if (!name || !phone || !car || !service || !booking_date || !booking_time) {
-      msg.style.display = 'block';
-      msg.textContent = '⚠️ يرجى ملء جميع الحقول بما فيها التاريخ والوقت';
+    const phone = document
+      .querySelector('input[type="tel"]')
+      .value
+      .trim();
+
+    const car = document
+      .querySelector('input[placeholder^="مثال"]')
+      .value
+      .trim();
+
+    const service = document
+      .querySelector('select')
+      .value;
+
+    const notes = document
+      .querySelector('textarea')
+      .value
+      .trim();
+
+    const bookingDate = document.getElementById('booking-date').value;
+    const bookingTime = document.getElementById('booking-time').value;
+
+    const btn = document.getElementById('submitBtn');
+
+    const msg = document.getElementById('form-msg');
+
+    // تحقق الحقول
+    if (
+      !name ||
+      !phone ||
+      !car ||
+      !service ||
+      !bookingDate ||
+      !bookingTime
+    ) {
+
+      showMessage(
+        '⚠️ يرجى ملء جميع الحقول المطلوبة',
+        'error'
+      );
+
       return;
     }
 
-    // منع تاريخ قديم
-    if (booking_date < today) {
-      msg.style.display = 'block';
-      msg.textContent = '⚠️ لا يمكن اختيار تاريخ قديم';
-      return;
-    }
+    // تحقق رقم الهاتف
+    if (!validPhone(phone)) {
 
-    // وقت بين 9 و 21
-    const hour = parseInt(booking_time.split(':')[0]);
-    if (hour < 9 || hour > 21) {
-      msg.style.display = 'block';
-      msg.textContent = '⚠️ المواعيد بين 9 صباحاً و 9 مساءً فقط';
+      showMessage(
+        '⚠️ رقم الهاتف غير صحيح',
+        'error'
+      );
+
       return;
     }
 
     btn.disabled = true;
-    btn.textContent = '⏳ جاري الإرسال...';
+
+    btn.textContent = '⏳ جاري إرسال الحجز...';
 
     try {
+
       const res = await fetch('/api/booking', {
+
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+
+        headers: {
+          'Content-Type': 'application/json'
+        },
+
         body: JSON.stringify({
           name,
           phone,
           car,
           service,
           notes,
-          booking_date,
-          booking_time
+          booking_date: bookingDate,
+          booking_time: bookingTime
         })
+
       });
 
       const data = await res.json();
 
       if (data.success) {
-        msg.style.display = 'block';
-        msg.textContent = '✅ تم الحجز بنجاح';
-        btn.textContent = 'تم الإرسال';
+
+        showMessage(
+          '✅ ' + data.message,
+          'success'
+        );
+
+        btn.textContent = '✅ تم الإرسال';
+
+        // Reset fields
+        document
+          .querySelectorAll(
+            '.contact-form input, .contact-form textarea'
+          )
+          .forEach(el => el.value = '');
+
+        document.querySelector('select').value = '';
+
+        document.getElementById('booking-time').innerHTML = `
+          <option value="">
+            اختر الموعد
+          </option>
+        `;
+
       } else {
-        throw new Error(data.message);
+
+        showMessage(
+          data.message || 'حدث خطأ',
+          'error'
+        );
+
+        btn.disabled = false;
+
+        btn.textContent = '✅ أرسل الطلب الآن';
       }
 
-    } catch (err) {
-      msg.style.display = 'block';
-      msg.textContent = '❌ حدث خطأ';
+    } catch(err) {
+
+      console.error(err);
+
+      showMessage(
+        '❌ حدث خطأ أثناء الإرسال',
+        'error'
+      );
+
       btn.disabled = false;
-      btn.textContent = 'أرسل الطلب الآن';
+
+      btn.textContent = '✅ أرسل الطلب الآن';
     }
   }
+
+  // رسالة الحالة
+  function showMessage(text, type) {
+
+    const msg = document.getElementById('form-msg');
+
+    msg.style.display = 'block';
+
+    if (type === 'success') {
+
+      msg.style.background = 'rgba(39,174,96,0.15)';
+      msg.style.border = '1px solid rgba(39,174,96,0.4)';
+      msg.style.color = '#2ecc71';
+
+    } else {
+
+      msg.style.background = 'rgba(220,50,50,0.15)';
+      msg.style.border = '1px solid rgba(220,50,50,0.4)';
+      msg.style.color = '#ff6b6b';
+
+    }
+
+    msg.textContent = text;
+  }
+
+  // منع اختيار أيام قديمة
+  window.addEventListener('load', () => {
+
+    const dateInput = document.getElementById('booking-date');
+
+    if (dateInput) {
+
+      const today = new Date().toISOString().split('T')[0];
+
+      dateInput.min = today;
+
+    }
+
+  });
+
 </script>
 </body>
 </html>
