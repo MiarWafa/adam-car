@@ -591,6 +591,49 @@
     transition: opacity 0.6s ease, transform 0.6s ease;
   }
   .fade-in.visible { opacity: 1; transform: translateY(0); }
+  /* ─── BOOKING SLOTS ─── */
+
+.slots-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 12px;
+}
+
+.slot-btn {
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,0.04);
+  color: #fff;
+  padding: 12px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-family: 'Cairo', sans-serif;
+  font-weight: 700;
+  transition: 0.2s;
+}
+
+.slot-btn:hover {
+  border-color: var(--gold);
+  background: rgba(245,166,35,0.08);
+}
+
+.slot-btn.selected {
+  background: linear-gradient(135deg,var(--gold),var(--orange));
+  color: #000;
+  border-color: transparent;
+}
+
+.slot-btn.booked {
+  opacity: 0.45;
+  cursor: not-allowed;
+  background: rgba(255,0,0,0.08);
+}
+
+.slots-loading {
+  text-align: center;
+  color: var(--text-muted);
+  padding: 20px;
+  font-size: 14px;
+}
 
   /* ─── RESPONSIVE ─── */
   @media (max-width: 768px) {
@@ -1356,83 +1399,6 @@
     }
   }
 
-  // Hamburger menu
-  const hamburger = document.getElementById('hamburger');
-  const mobileMenu = document.getElementById('mobileMenu');
-  hamburger.addEventListener('click', () => {
-    mobileMenu.classList.toggle('open');
-  });
-  function closeMobile() {
-    mobileMenu.classList.remove('open');
-  }
-
-  // Scroll fade-in
-  const observer = new IntersectionObserver((entries) => {
-    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); } });
-  }, { threshold: 0.1 });
-  document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
-
-  // Counter animation
-  function animateCounter(el) {
-    const target = parseInt(el.dataset.target);
-    const duration = 2000;
-    const step = target / (duration / 16);
-    let current = 0;
-    const timer = setInterval(() => {
-      current += step;
-      if (current >= target) { current = target; clearInterval(timer); }
-      el.textContent = Math.floor(current).toLocaleString('ar');
-    }, 16);
-  }
-
-  const statsObserver = new IntersectionObserver((entries) => {
-    entries.forEach(e => {
-      if (e.isIntersecting) {
-        document.querySelectorAll('[data-target]').forEach(animateCounter);
-        statsObserver.disconnect();
-      }
-    });
-  }, { threshold: 0.5 });
-
-  const statsEl = document.querySelector('.hero-stats');
-  if (statsEl) statsObserver.observe(statsEl);
-
-  // Nav scroll effect
-  window.addEventListener('scroll', () => {
-    const nav = document.getElementById('navbar');
-    nav.style.background = window.scrollY > 80
-      ? 'rgba(8,8,16,0.98)'
-      : 'rgba(8,8,16,0.92)';
-  });
-
-  // Form submit - real API
-  async function submitForm() {
-    const name    = document.querySelector('input[placeholder="اكتب اسمك هنا"]').value.trim();
-    const phone   = document.querySelector('input[type="tel"]').value.trim();
-    const car     = document.querySelector('input[placeholder^="مثال"]').value.trim();
-    const service = document.querySelector('select').value;
-    const notes   = document.querySelector('textarea').value.trim();
-    const btn     = document.getElementById('submitBtn');
-    const msg     = document.getElementById('form-msg');
-
-    if (!name || !phone || !car || !service) {
-      msg.style.display = 'block';
-      msg.style.background = 'rgba(220,50,50,0.15)';
-      msg.style.border = '1px solid rgba(220,50,50,0.4)';
-      msg.style.color = '#ff6b6b';
-      msg.textContent = '⚠️ يرجى ملء جميع الحقول المطلوبة';
-      return;
-    }
-
-    btn.disabled = true;
-    btn.textContent = '⏳ جاري الإرسال...';
-
-    try {
-      const res = await fetch('/api/booking', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, phone, car, service, notes })
-      });
       const data = await res.json();
 
       if (data.success) {
