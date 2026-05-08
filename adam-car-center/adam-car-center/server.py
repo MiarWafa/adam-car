@@ -1,20 +1,48 @@
-from flask import Flask, request, jsonify, session, redirect, send_from_directory
-from flask_socketio import SocketIO, emit
+from flask import Flask, request, jsonify, send_from_directory, session, redirect
 import sqlite3
 import os
-from datetime import datetime
-import json
 
 app = Flask(__name__, static_folder='public', static_url_path='')
-app.secret_key = os.environ.get("SECRET_KEY", "dev_secret")
 
-socketio = SocketIO(app, cors_allowed_origins="*")
+# إعدادات الأمان والجلسات
+app.secret_key = os.environ.get('SECRET_KEY', 'miar_secure_key_2026')
+DB = 'bookings.db'
+ADMIN_KEY = os.environ.get('ADMIN_KEY', 'adam2025admin')
 
-DB = "bookings.db"
+# ───────── تهيئة قاعدة البيانات ─────────
+def init_db():
+    conn = sqlite3.connect(DB)
 
-ADMIN_KEY = os.environ.get("ADMIN_KEY", "adam2025admin")
+    # جدول الحجوزات (كما هو بدون حذف)
+    conn.execute('''
+        CREATE TABLE IF NOT EXISTS bookings (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            phone TEXT NOT NULL,
+            car TEXT NOT NULL,
+            service TEXT NOT NULL,
+            notes TEXT DEFAULT '',
+            status TEXT DEFAULT 'جديد',
+            created_at TEXT DEFAULT (datetime('now','localtime'))
+        )
+    ''')
 
-# ================= DB =================
+    # ⭐ جدول المصروفات والأرباح (جديد)
+    conn.execute('''
+        CREATE TABLE IF NOT EXISTS expenses (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            booking_id INTEGER,
+            item_name TEXT,
+            purchase_cost REAL DEFAULT 0,
+            selling_price REAL DEFAULT 0,
+            profit REAL DEFAULT 0,
+            created_at TEXT DEFAULT (datetime('now','localtime'))
+        )
+    ''')
+
+    conn.commit()
+    conn.close()
+
 
 def get_db():
     conn = sqlite3.connect(DB)
@@ -22,323 +50,160 @@ def get_db():
     return conn
 
 
-def init_db():
-    conn = get_db()
-
-    # BOOKINGS (atomic protection added)
-    conn.execute("""
-    CREATE TABLE IF NOT EXISTS bookings (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL,
-        phone TEXT NOT NULL,
-        car TEXT NOT NULL,
-        service TEXT NOT NULL,
-        booking_date TEXT NOT NULL,
-        booking_time TEXT NOT NULL,
-        notes TEXT DEFAULT '',
-        status TEXT DEFAULT 'جديد',
-        total_cost REAL DEFAULT 0,
-        total_profit REAL DEFAULT 0,
-        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE(booking_date, booking_time)
-    )
-    """)
-
-    # EXPENSES
-    conn.execute("""
-    CREATE TABLE IF NOT EXISTS expenses (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        booking_id INTEGER,
-        item_name TEXT,
-        cost_price REAL,
-        sell_price REAL,
-        profit REAL
-    )
-    """)
-
-    # AUDIT LOG
-    conn.execute("""
-    CREATE TABLE IF NOT EXISTS audit_log (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        action TEXT,
-        entity TEXT,
-        entity_id INTEGER,
-        data TEXT,
-        created_at TEXT DEFAULT CURRENT_TIMESTAMP
-    )
-    """)
-
-    conn.commit()
-    conn.close()
-
-
-# ================= HELPERS =================
-
-def log_action(action, entity, entity_id, data):
-    conn = get_db()
-    conn.execute("""
-        INSERT INTO audit_log (action, entity, entity_id, data)
-        VALUES (?, ?, ?, ?)
-    """, (action, entity, entity_id, json.dumps(data)))
-    conn.commit()
-    conn.close()
-
-
-def valid_phone(phone):
-    return phone.isdigit() and phone.startswith("01") and len(phone) == 11
-
-
 def is_admin():
-    return session.get("role") == "admin"
+    return session.get('admin') is True
 
-
-def is_staff():
-    return session.get("role") in ["admin", "staff"]
-
-
-# ================= AUTH =================
-
-@app.route("/login", methods=["POST"])
+# ───────── تسجيل الدخول ─────────
+@app.route('/login', methods=['GET', 'POST'])
 def login():
-    password = request.json.get("password")
+    if request.method == 'POST':
+        password = request.form.get('password')
+        if password == ADMIN_KEY:
+            session['admin'] = True
+            return redirect('/admin')
+        return "❌ كلمة المرور غير صحيحة", 401
+    return send_from_directory('public', 'login.html')
 
-    if password == ADMIN_KEY:
-        session["role"] = "admin"
-        return jsonify({"success": True, "role": "admin"})
+# ───────── إضافة حجز جديد ─────────
+@app.route('/api/booking', methods=['POST'])
+def add_booking():
+    data = request.get_json()
 
-    return jsonify({"success": False}), 401
+    name = (data.get('name') or '').strip()
+    phone = (data.get('phone') or '').strip()
+    car = (data.get('car') or '').strip()
+    service = (data.get('service') or '').strip()
+    notes = (data.get('notes') or '').strip()
+
+    if not all([name, phone, car, service]):
+        return jsonify({'success': False, 'message': 'يرجى ملء جميع الحقول'}), 400
+
+    conn = get_db()
+    cur = conn.execute(
+        'INSERT INTO bookings (name, phone, car, service, notes) VALUES (?, ?, ?, ?, ?)',
+        (name, phone, car, service, notes)
+    )
+    conn.commit()
+    conn.close()
+
+    return jsonify({'success': True, 'id': cur.lastrowid})
 
 
-@app.route("/logout")
+# ───────── جلب الحجوزات ─────────
+@app.route('/api/bookings', methods=['GET'])
+def get_bookings():
+    if not is_admin():
+        return jsonify({'success': False, 'message': 'غير مصرح'}), 401
+
+    conn = get_db()
+    rows = conn.execute('SELECT * FROM bookings ORDER BY id DESC').fetchall()
+    conn.close()
+
+    return jsonify({'success': True, 'bookings': [dict(r) for r in rows]})
+
+
+# ───────── تحديث الحالة + إضافة مصروفات ─────────
+@app.route('/api/bookings/<int:bid>', methods=['PATCH'])
+def update_booking(bid):
+    if not is_admin():
+        return jsonify({'success': False, 'message': 'غير مصرح'}), 401
+
+    data = request.get_json()
+    status = data.get('status')
+
+    allowed = ['جديد', 'تم التواصل', 'مكتمل', 'ملغي']
+    if status not in allowed:
+        return jsonify({'success': False, 'message': 'حالة غير صالحة'}), 400
+
+    conn = get_db()
+    conn.execute('UPDATE bookings SET status=? WHERE id=?', (status, bid))
+    conn.commit()
+    conn.close()
+
+    return jsonify({'success': True})
+
+
+# ⭐───────── إضافة مصروف (جديد) ─────────
+@app.route('/api/expenses', methods=['POST'])
+def add_expense():
+    if not is_admin():
+        return jsonify({'success': False, 'message': 'غير مصرح'}), 401
+
+    data = request.get_json()
+
+    booking_id = data.get('booking_id')
+    item_name = data.get('item_name')
+    purchase_cost = float(data.get('purchase_cost') or 0)
+    selling_price = float(data.get('selling_price') or 0)
+
+    profit = selling_price - purchase_cost
+
+    conn = get_db()
+    conn.execute('''
+        INSERT INTO expenses (booking_id, item_name, purchase_cost, selling_price, profit)
+        VALUES (?, ?, ?, ?, ?)
+    ''', (booking_id, item_name, purchase_cost, selling_price, profit))
+
+    conn.commit()
+    conn.close()
+
+    return jsonify({'success': True, 'profit': profit})
+
+
+# ⭐───────── جلب المصروفات ─────────
+@app.route('/api/expenses', methods=['GET'])
+def get_expenses():
+    if not is_admin():
+        return jsonify({'success': False, 'message': 'غير مصرح'}), 401
+
+    conn = get_db()
+    rows = conn.execute('SELECT * FROM expenses ORDER BY id DESC').fetchall()
+    conn.close()
+
+    total_expenses = sum(r['purchase_cost'] for r in rows)
+    total_profit = sum(r['profit'] for r in rows)
+
+    return jsonify({
+        'success': True,
+        'expenses': [dict(r) for r in rows],
+        'total_expenses': total_expenses,
+        'total_profit': total_profit
+    })
+
+
+# ───────── حذف حجز ─────────
+@app.route('/api/bookings/<int:bid>', methods=['DELETE'])
+def delete_booking(bid):
+    if not is_admin():
+        return jsonify({'success': False, 'message': 'غير مصرح'}), 401
+
+    conn = get_db()
+    conn.execute('DELETE FROM bookings WHERE id=?', (bid,))
+    conn.commit()
+    conn.close()
+
+    return jsonify({'success': True})
+
+
+# ───────── صفحات ─────────
+@app.route('/')
+def index():
+    return send_from_directory('public', 'index.html')
+
+@app.route('/admin')
+def admin():
+    if not is_admin():
+        return redirect('/login')
+    return send_from_directory('public', 'admin.html')
+
+@app.route('/logout')
 def logout():
     session.clear()
-    return redirect("/login")
+    return redirect('/login')
 
 
-# ================= ATOMIC BOOKING =================
-
-@app.route("/api/booking", methods=["POST"])
-def booking():
-
-    data = request.json
-
-    name = (data.get("name") or "").strip()
-    phone = (data.get("phone") or "").strip()
-    car = (data.get("car") or "").strip()
-    service = (data.get("service") or "").strip()
-    date = (data.get("booking_date") or "").strip()
-    time = (data.get("booking_time") or "").strip()
-    notes = (data.get("notes") or "").strip()
-
-    if not all([name, phone, car, service, date, time]):
-        return jsonify({"success": False, "message": "Missing fields"}), 400
-
-    if not valid_phone(phone):
-        return jsonify({"success": False, "message": "Invalid phone"}), 400
-
-    try:
-        conn = get_db()
-        conn.execute("BEGIN IMMEDIATE")
-
-        cur = conn.execute("""
-            INSERT INTO bookings
-            (name, phone, car, service, booking_date, booking_time, notes)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-        """, (name, phone, car, service, date, time, notes))
-
-        booking_id = cur.lastrowid
-
-        conn.commit()
-
-        log_action("CREATE", "booking", booking_id, data)
-
-        socketio.emit("new_booking", {"id": booking_id, "name": name})
-
-        return jsonify({
-            "success": True,
-            "id": booking_id
-        })
-
-    except sqlite3.IntegrityError:
-        return jsonify({
-            "success": False,
-            "message": "هذا الموعد محجوز بالفعل"
-        }), 409
-
-    except Exception as e:
-        conn.rollback()
-        return jsonify({"success": False, "error": str(e)}), 500
-
-
-# ================= AVAILABLE TIMES =================
-
-@app.route("/api/available-times")
-def available_times():
-
-    date = request.args.get("date")
-
-    all_times = [
-        "09:00","10:00","11:00","12:00",
-        "13:00","14:00","15:00","16:00",
-        "17:00","18:00","19:00","20:00","21:00"
-    ]
-
-    conn = get_db()
-
-    booked = conn.execute(
-        "SELECT booking_time FROM bookings WHERE booking_date=?",
-        (date,)
-    ).fetchall()
-
-    booked = {b["booking_time"] for b in booked}
-
-    available = [t for t in all_times if t not in booked]
-
-    return jsonify({"success": True, "times": available})
-
-
-# ================= BOOKINGS =================
-
-@app.route("/api/bookings")
-def bookings():
-
-    if not is_admin():
-        return jsonify({"success": False}), 401
-
-    conn = get_db()
-
-    rows = conn.execute("""
-        SELECT * FROM bookings ORDER BY id DESC
-    """).fetchall()
-
-    return jsonify({
-        "success": True,
-        "bookings": [dict(r) for r in rows]
-    })
-
-
-# ================= STATUS UPDATE =================
-
-@app.route("/api/bookings/<int:bid>", methods=["PATCH"])
-def update_status(bid):
-
-    if not is_admin():
-        return jsonify({"success": False}), 401
-
-    status = request.json.get("status")
-
-    allowed = ["جديد", "تم التواصل", "مكتمل", "ملغي"]
-
-    if status not in allowed:
-        return jsonify({"success": False}), 400
-
-    conn = get_db()
-
-    conn.execute(
-        "UPDATE bookings SET status=? WHERE id=?",
-        (status, bid)
-    )
-
-    conn.commit()
-
-    log_action("UPDATE_STATUS", "booking", bid, {"status": status})
-
-    return jsonify({"success": True})
-
-
-# ================= EXPENSE + PROFIT =================
-
-@app.route("/api/bookings/<int:bid>/expense", methods=["POST"])
-def expense(bid):
-
-    if not is_admin():
-        return jsonify({"success": False}), 401
-
-    data = request.json
-
-    try:
-        cost = float(data.get("cost_price", 0))
-        sell = float(data.get("sell_price", 0))
-    except:
-        return jsonify({"success": False}), 400
-
-    profit = sell - cost
-
-    conn = get_db()
-
-    conn.execute("""
-        INSERT INTO expenses
-        (booking_id, item_name, cost_price, sell_price, profit)
-        VALUES (?, ?, ?, ?, ?)
-    """, (bid, data["item_name"], cost, sell, profit))
-
-    totals = conn.execute("""
-        SELECT
-        SUM(cost_price) as cost,
-        SUM(profit) as profit
-        FROM expenses
-        WHERE booking_id=?
-    """, (bid,)).fetchone()
-
-    conn.execute("""
-        UPDATE bookings
-        SET total_cost=?, total_profit=?
-        WHERE id=?
-    """, (totals["cost"] or 0, totals["profit"] or 0, bid))
-
-    conn.commit()
-
-    log_action("ADD_EXPENSE", "booking", bid, data)
-
-    return jsonify({"success": True})
-
-
-# ================= DASHBOARD (PROFIT DAILY) =================
-
-@app.route("/api/dashboard")
-def dashboard():
-
-    if not is_admin():
-        return jsonify({"success": False}), 401
-
-    conn = get_db()
-
-    stats = conn.execute("""
-        SELECT
-        COUNT(*) as bookings,
-        IFNULL(SUM(total_profit),0) as profit
-        FROM bookings
-        WHERE date(created_at)=date('now')
-    """).fetchone()
-
-    return jsonify({"success": True, "stats": dict(stats)})
-
-
-# ================= INVOICE =================
-
-@app.route("/api/invoice/<int:bid>")
-def invoice(bid):
-
-    conn = get_db()
-
-    booking = conn.execute(
-        "SELECT * FROM bookings WHERE id=?",
-        (bid,)
-    ).fetchone()
-
-    expenses = conn.execute(
-        "SELECT * FROM expenses WHERE booking_id=?",
-        (bid,)
-    ).fetchall()
-
-    return jsonify({
-        "booking": dict(booking),
-        "expenses": [dict(e) for e in expenses]
-    })
-
-
-# ================= RUN =================
-
-if __name__ == "__main__":
+# ───────── تشغيل ─────────
+if __name__ == '__main__':
     init_db()
-    socketio.run(app, host="0.0.0.0", port=5000, debug=True)
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port, debug=False)
