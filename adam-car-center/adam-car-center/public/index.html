@@ -906,44 +906,94 @@
     </div>
 
     <div class="contact-form">
-      <div class="form-title">🗓️ احجز موعدك الآن</div>
+  <div class="form-title">🗓️ احجز موعدك الآن</div>
 
-      <div class="form-group">
-        <label>الاسم الكريم</label>
-        <input type="text" placeholder="اكتب اسمك هنا">
-      </div>
+  <div class="form-group">
+    <label>الاسم الكريم</label>
+    <input id="f-name" type="text" placeholder="اكتب اسمك هنا">
+  </div>
 
-      <div class="form-group">
-        <label>رقم الجوال</label>
-        <input type="tel" placeholder="+20XXXXXXXXXX">
-      </div>
+  <div class="form-group">
+    <label>رقم الجوال</label>
+    <input id="f-phone" type="tel" placeholder="+20XXXXXXXXXX">
+  </div>
 
-      <div class="form-group">
-        <label>نوع السيارة</label>
-        <input type="text" placeholder="مثال: BMW 320i 2020">
-      </div>
+  <div class="form-group">
+    <label>نوع السيارة</label>
+    <input id="f-car" type="text" placeholder="مثال: BMW 320i 2020">
+  </div>
 
-      <div class="form-group">
-        <label>الخدمة المطلوبة</label>
-        <select>
-          <option value="">اختر الخدمة...</option>
-          <option>ميكانيكا</option>
-          <option>كهرباء</option>
-          <option>صيانة تكييف / شحن فريون</option>
-          <option>تغيير زيت</option>
-          <option>إطارات</option>
-          <option>بطاريات</option>
-          <option>كشف أعطال</option>
-          <option>دوكو وهيكل</option>
-          <option>أخرى</option>
-        </select>
-      </div>
+  <div class="form-group">
+    <label>الخدمة المطلوبة</label>
+    <select id="f-service">
+      <option value="">اختر الخدمة...</option>
+      <option>ميكانيكا</option>
+      <option>كهرباء</option>
+      <option>صيانة تكييف / شحن فريون</option>
+      <option>تغيير زيت</option>
+      <option>إطارات</option>
+      <option>بطاريات</option>
+      <option>كشف أعطال</option>
+      <option>دوكو وهيكل</option>
+      <option>أخرى</option>
+    </select>
+  </div>
 
-      <div class="form-group">
-        <label>ملاحظات إضافية</label>
-        <textarea placeholder="اوصف المشكلة أو أي تفاصيل مفيدة..."></textarea>
-      </div>
+  <div class="form-group">
+    <label>اختر التاريخ</label>
+    <input id="f-date" type="date" onchange="loadSlots()">
+  </div>
 
+  <div
+    id="slots-section"
+    style="display:none; margin-bottom:20px;"
+  >
+    <label
+      style="
+        display:block;
+        margin-bottom:12px;
+        font-size:13px;
+        font-weight:700;
+        color:var(--text-muted);
+      "
+    >
+      اختر الموعد المتاح
+    </label>
+
+    <div id="slots-container"></div>
+  </div>
+
+  <input type="hidden" id="f-slot">
+
+  <div class="form-group">
+    <label>ملاحظات إضافية</label>
+    <textarea
+      id="f-notes"
+      placeholder="اوصف المشكلة أو أي تفاصيل مفيدة..."
+    ></textarea>
+  </div>
+
+  <button
+    class="form-submit"
+    id="submitBtn"
+    onclick="submitForm()"
+  >
+    ✅ أرسل الطلب الآن
+  </button>
+
+  <div
+    id="form-msg"
+    style="
+      display:none;
+      margin-top:14px;
+      padding:12px 16px;
+      border-radius:10px;
+      font-size:14px;
+      font-weight:700;
+      text-align:center;
+    "
+  ></div>
+</div>
       <button class="form-submit" id="submitBtn" onclick="submitForm()">✅ أرسل الطلب الآن</button>
       <div id="form-msg" style="display:none; margin-top:14px; padding:12px 16px; border-radius:10px; font-size:14px; font-weight:700; text-align:center;"></div>
     </div>
