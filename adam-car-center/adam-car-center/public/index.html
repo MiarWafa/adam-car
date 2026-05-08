@@ -361,17 +361,33 @@
 
   let selectedSlot='';
   async function loadSlots(){
-    const date=document.getElementById('f-date').value;
-    if(!date)return;
-    document.getElementById('slots-section').style.display='block';
-    document.getElementById('slots-container').innerHTML='<div class="slots-loading">⏳ جاري تحميل المواعيد...</div>';
-    selectedSlot='';document.getElementById('f-slot').value='';
-    try{
-      const res=await fetch('/api/slots?date='+date);
-      const data=await res.json();
-      renderSlots(data.slots);
-    }catch{document.getElementById('slots-container').innerHTML='<div class="slots-loading" style="color:#ff6b6b">❌ خطأ في تحميل المواعيد</div>';}
+  const date=document.getElementById('f-date').value;
+  if(!date)return;
+
+  document.getElementById('slots-section').style.display='block';
+  document.getElementById('slots-container').innerHTML='<div class="slots-loading">⏳ جاري تحميل المواعيد...</div>';
+
+  selectedSlot='';
+  document.getElementById('f-slot').value='';
+
+  try{
+    const res=await fetch('/api/slots?date='+date);
+    const data=await res.json();
+
+    if(!data.success){
+      document.getElementById('slots-container').innerHTML =
+        '<div class="slots-loading" style="color:#ff6b6b">❌ '+(data.message || 'خطأ')+'</div>';
+      return;
+    }
+
+    renderSlots(data.slots || []);
+
+  }catch(e){
+    document.getElementById('slots-container').innerHTML=
+      '<div class="slots-loading" style="color:#ff6b6b">❌ خطأ في الاتصال</div>';
   }
+}
+
 
   function renderSlots(slots){
     if(!slots||!slots.length){document.getElementById('slots-container').innerHTML='<div class="slots-loading">لا توجد مواعيد متاحة في هذا اليوم</div>';return;}
@@ -380,6 +396,7 @@
       const btn=document.createElement('button');
       btn.type='button';
       btn.className='slot-btn'+(s.booked?' booked':'');
+      btn.disabled = s.booked || !s.available;
       btn.textContent=s.booked?'🔴 '+s.label:'✅ '+s.label;
       if(!s.booked){btn.onclick=()=>{document.querySelectorAll('.slot-btn').forEach(b=>b.classList.remove('selected'));btn.classList.add('selected');selectedSlot=s.value;document.getElementById('f-slot').value=s.value;};}
       grid.appendChild(btn);
