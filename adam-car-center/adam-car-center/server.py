@@ -123,19 +123,39 @@ def get_slot_config():
  
 # ─── API: SAVE slot config (admin) ──────────────────────────
 @app.route('/api/slot-config', methods=['POST'])
+@app.route('/api/slot-config', methods=['POST'])
 def save_slot_config():
     if not check_admin(request):
         return jsonify({'success': False, 'message': 'غير مصرح'}), 401
+
     data = request.get_json()
-    date    = (data.get('date') or '').strip()
+    date = (data.get('date') or '').strip()
     enabled = data.get('enabled', [])
+
     if not date:
         return jsonify({'success': False, 'message': 'التاريخ مطلوب'}), 400
+
     conn = get_db()
-    conn.execute('INSERT INTO slot_config(date,enabled) VALUES(?,?) ON CONFLICT(date) DO UPDATE SET enabled=?',
-                 (date, json.dumps(enabled), json.dumps(enabled)))
+
+    existing = conn.execute(
+        'SELECT id FROM slot_config WHERE date=?',
+        (date,)
+    ).fetchone()
+
+    if existing:
+        conn.execute(
+            'UPDATE slot_config SET enabled=? WHERE date=?',
+            (json.dumps(enabled), date)
+        )
+    else:
+        conn.execute(
+            'INSERT INTO slot_config(date, enabled) VALUES(?,?)',
+            (date, json.dumps(enabled))
+        )
+
     conn.commit()
     conn.close()
+
     return jsonify({'success': True})
  
 # ─── API: CREATE booking ─────────────────────────────────────
