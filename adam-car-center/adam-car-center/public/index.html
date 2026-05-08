@@ -1354,7 +1354,11 @@
       });
 
       const data = await res.json();
-
+      if (!res.ok) {
+  const text = await res.text();
+  console.error(text);
+  return;
+}
       if (data.success) {
 
         showMessage(
