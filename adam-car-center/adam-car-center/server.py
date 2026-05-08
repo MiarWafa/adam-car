@@ -100,7 +100,7 @@ def get_slots():
 
     return jsonify({'success': True, 'slots': slots})
             
-    return jsonify({'success': True, 'slots': slots})
+   
  
 # ─── API: GET slot config (admin) ───────────────────────────
 @app.route('/api/slot-config')
