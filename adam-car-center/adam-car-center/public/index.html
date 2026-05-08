@@ -1200,61 +1200,42 @@
   // تحميل المواعيد المتاحة
   async function loadAvailableTimes() {
 
-    const dateInput = document.getElementById('booking-date');
-    const timeSelect = document.getElementById('booking-time');
+  const date = document.getElementById('booking-date').value;
+  const timeSelect = document.getElementById('booking-time');
 
-    if (!dateInput || !timeSelect) return;
+  timeSelect.innerHTML = '<option>جاري تحميل المواعيد...</option>';
 
-    const date = dateInput.value;
-
-    if (!date) return;
-
-    try {
-
-      const res = await fetch('/api/available-times?date=' + date);
-
-      const data = await res.json();
-
-      timeSelect.innerHTML = '';
-
-      if (!data.success) {
-
-        timeSelect.innerHTML = `
-          <option value="">
-            لا توجد مواعيد متاحة
-          </option>
-        `;
-
-        return;
-      }
-
-      // أول اختيار
-      const defaultOption = document.createElement('option');
-
-      defaultOption.value = '';
-
-      defaultOption.textContent = 'اختر الموعد';
-
-      timeSelect.appendChild(defaultOption);
-
-      data.times.forEach(t => {
-
-        const option = document.createElement('option');
-
-        option.value = t;
-
-        option.textContent = t;
-
-        timeSelect.appendChild(option);
-
-      });
-
-    } catch(err) {
-
-      console.error(err);
-
-    }
+  if (!date) {
+    timeSelect.innerHTML = '<option value="">اختر التاريخ أولاً</option>';
+    return;
   }
+
+  try {
+
+    const res = await fetch(`/api/available-times?date=${encodeURIComponent(date)}`);
+    const data = await res.json();
+
+    timeSelect.innerHTML = '';
+
+    if (!data.success || !data.times.length) {
+      timeSelect.innerHTML = '<option value="">لا توجد مواعيد متاحة</option>';
+      return;
+    }
+
+    timeSelect.innerHTML = '<option value="">اختر الموعد</option>';
+
+    data.times.forEach(t => {
+      const option = document.createElement('option');
+      option.value = t;
+      option.textContent = t;
+      timeSelect.appendChild(option);
+    });
+
+  } catch (err) {
+    console.error(err);
+    timeSelect.innerHTML = '<option value="">خطأ في تحميل المواعيد</option>';
+  }
+}
 
   // التحقق من رقم الهاتف المصري
   function validPhone(phone) {
